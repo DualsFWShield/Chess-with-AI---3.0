@@ -203,32 +203,25 @@ function defineLessons() {
         },
         // 10: En Passant
         {
-            title: "La Prise en Passant", // Nom plus courant
-            objective: "Capturez le pion noir en e5 'en passant' avec votre pion d5.", // Objectif plus précis
+            title: "La Prise en Passant",
+            objective: "Capturez le pion noir en e5 'en passant' avec votre pion d5.",
             explanation: "La prise 'en passant' est une règle spéciale pour les pions. Si un pion adverse avance de deux cases depuis sa position initiale et atterrit juste à côté de votre pion, votre pion peut le capturer comme s'il n'avait avancé que d'une case. Cette capture doit être effectuée immédiatement au coup suivant.",
             interactive: true,
-             // FEN où le pion blanc en d5 peut prendre le pion noir en e5 (qui vient de jouer e7-e5) en passant sur e6.
-            // FEN correcte pour une prise en passant pour Blanc sur e6 :
-            // Position où Blanc a un pion en d5, Noir vient de jouer ...e7-e5. Blanc peut jouer dxe6.
-            setupFen: '4k3/8/8/3pP3/8/8/8/4K3 w - e6 0 1', // Pion blanc d5, pion noir vient de jouer e7-e5 -> 'en passant' possible sur e6.
-            highlightSquares: { piece: ['d5'], target: ['e6'] }, // La capture se fait sur la case "traversée"
-            allowedMoves: ['dxe6'], // Notation de la capture en passant
+            setupFen: 'rnbqkbnr/ppp2ppp/8/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 1',
+            highlightSquares: { piece: ['d5'], target: ['e6'] },
+            allowedMoves: ['dxe6'],
             showOnlyLegalMovesFor: 'd5',
-            // validateMove est bien ici car il vérifie le flag spécifique 'e' (en passant)
-            validateMove: (m) => m.flags.includes('e') && m.from === 'd5' && m.to === 'e6'
         },
         // 11: Promotion
         {
             title: "La Promotion",
-            objective: "Avancez votre pion en a8 et promouvez-le en Dame.", // Objectif plus précis
+            objective: "Avancez votre pion en a8 et promouvez-le en Dame.",
             explanation: "Lorsqu'un pion atteint la dernière rangée (la 8e pour les Blancs, la 1ère pour les Noirs), il DOIT être immédiatement remplacé ('promu') par une autre pièce de sa couleur : Dame, Tour, Fou ou Cavalier (pas un autre pion ni un Roi). La Dame est le choix le plus fréquent car c'est la pièce la plus puissante.",
             interactive: true,
-            setupFen: '8/P7/k7/8/8/8/8/K7 w - - 0 1', // Pion prêt à promouvoir, rois présents pour éviter FEN invalide
+            setupFen: '1k6/P7/8/8/8/8/8/K7 w - - 0 1',
             highlightSquares: { piece: ['a7'], target: ['a8'] },
-            allowedMoves: ['a8'], // Promotion en Dame (Q = Queen)
+            allowedMoves: ['a8=Q'], // Fixed: Added =Q for queen promotion
             showOnlyLegalMovesFor: 'a7',
-             // validateMove est bien ici car il vérifie le flag 'p' (promotion) et le type de pièce
-            validateMove: (m) => m.flags.includes('p') && m.promotion === 'q' && m.from === 'a7' && m.to === 'a8'
         },
         // 12: Échec et Mat
         {
@@ -236,11 +229,10 @@ function defineLessons() {
             objective: "Mettez le roi noir en échec et mat en un coup.",
             explanation: "L'échec et mat termine la partie. Le roi est 'en échec' (attaqué) et il n'existe aucun coup légal pour parer cet échec (ni bouger le roi sur une case sûre, ni interposer une pièce, ni capturer la pièce qui attaque).",
             interactive: true,
-            // Position simple : Dame blanche vs Roi noir seul.
-            setupFen: '4k3/Q7/8/8/8/8/8/4K3 w - - 0 1', // Dame en a7, Roi noir en e8.
-            highlightSquares: { piece: ['a7'], target: ['e7'] }, // Coup Qe7#
-            allowedMoves: ['e7'], // Échec et mat (notation avec #)
-            showOnlyLegalMovesFor: 'a7',
+            setupFen: '4k3/8/8/8/8/8/8/4K2Q w - - 0 1',
+            highlightSquares: { piece: ['h1'], target: ['h8'] },
+            allowedMoves: ['Qh8#'], // Fixed: Added # for checkmate
+            showOnlyLegalMovesFor: 'h1',
         },
         // 13: Pat
         {
