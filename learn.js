@@ -402,12 +402,13 @@ function handleSquareClick_Learn(event) {
     const col = parseInt(square.dataset.col);
     const clickedAlg = files[col] + (8 - row);
     const pieceOnSquare = learnGame.get(clickedAlg);
+    const currentTurn = learnGame.turn();
 
     if (selectedSquareAlg) {
+        // --- Piece Already Selected ---
         const fromAlg = selectedSquareAlg;
-        const fromPiece = learnGame.get(fromAlg);
 
-        // Désélection si on clique sur la même case
+        // Case 1: Clicked same square - Deselect
         if (clickedAlg === fromAlg) {
             square.classList.remove('selected');
             selectedSquareAlg = null;
@@ -415,114 +416,79 @@ function handleSquareClick_Learn(event) {
             return;
         }
 
-        try {
-            // Détecter les coups spéciaux
-            const isPawnPromotion = fromPiece && 
-                fromPiece.type === 'p' && 
-                ((fromPiece.color === 'w' && row === 0) || 
-                 (fromPiece.color === 'b' && row === 7));
+        // Case 2: Attempt to move
+        const legalMovesForPiece = learnGame.moves({ square: fromAlg, verbose: true });
+        const targetMove = legalMovesForPiece.find(move => move.to === clickedAlg);
 
-            const isRoque = fromPiece && 
-                fromPiece.type === 'k' && 
-                Math.abs(col - files.indexOf(fromAlg[0])) === 2;
-
-            // Essayer de jouer le coup
-            let move;
-            let moveOptions = {
-                from: fromAlg,
-                to: clickedAlg
-            };
-
-            // Ajouter la promotion si nécessaire
-            if (isPawnPromotion) {
-                moveOptions.promotion = 'q';
+        if (targetMove) {
+            // Filter move based on lesson constraints
+            let isValidForLesson = true;
+            if (lesson.allowedMoves) {
+                isValidForLesson = lesson.allowedMoves.includes(targetMove.san);
+            } else if (lesson.validateMove) {
+                isValidForLesson = lesson.validateMove(targetMove);
             }
 
-            move = learnGame.move(moveOptions);
+            try {
+                const moveOptions = {
+                    from: fromAlg,
+                    to: clickedAlg,
+                    promotion: targetMove.flags.includes('p') ? 'q' : undefined // Auto-promote to queen
+                };
 
-            if (move) {
-                // Gestion des highlights spéciaux
-                if (move.flags.includes('e')) {
-                    // En passant
-                    lastMoveHighlight = {
-                        from: move.from,
-                        to: move.to,
-                        captured: move.to.charAt(0) + move.from.charAt(1)
-                    };
-                } else if (move.flags.includes('k') || move.flags.includes('q')) {
-                    // Roque
-                    const isKingside = move.flags.includes('k');
-                    lastMoveHighlight = {
-                        from: move.from,
-                        to: move.to,
-                        rook_from: isKingside ? 'h1' : 'a1',
-                        rook_to: isKingside ? 'f1' : 'd1'
-                    };
-                } else {
-                    // Coup normal
+                const move = learnGame.move(moveOptions);
+                if (move) {
+                    // Update last move highlight
                     lastMoveHighlight = { from: move.from, to: move.to };
-                }
-
-                // Vérifier si le coup est valide pour la leçon
-                let isValidForLesson = false;
-                if (lesson.allowedMoves) {
-                    isValidForLesson = lesson.allowedMoves.includes(move.san);
-                } else if (lesson.validateMove) {
-                    isValidForLesson = lesson.validateMove(move);
-                } else {
-                    isValidForLesson = true;
-                }
-
-                selectedSquareAlg = null;
-                createBoard_Learn();
-
-                if (isValidForLesson) {
-                    completeLessonStep();
-                } else {
-                    showFeedback("Ce n'est pas le coup attendu pour cette leçon.", 'error');
-                    learnGame.undo();
+                    selectedSquareAlg = null;
                     createBoard_Learn();
+
+                    if (isValidForLesson) {
+                        completeLessonStep();
+                    } else {
+                        showFeedback("Ce n'est pas le coup attendu pour cette leçon.", 'error');
+                        learnGame.undo();
+                        createBoard_Learn();
+                    }
                 }
+            } catch(e) {
+                showFeedback("Coup invalide", 'error');
             }
-        } catch(e) {
-            console.error('Erreur de coup:', e);
-            showFeedback("Coup invalide", 'error');
+        } else {
+            // Case 3: Invalid destination or another piece
+            if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
+                // Switch selection to new piece
+                selectedSquareAlg = clickedAlg;
+                square.classList.add('selected');
+                const moves = learnGame.moves({ square: clickedAlg, verbose: true });
+                highlightMoves_Learn(moves);
+            } else {
+                // Deselect on invalid target
+                selectedSquareAlg = null;
+                highlightMoves_Learn([]);
+            }
         }
-
-        selectedSquareAlg = null;
-        highlightMoves_Learn([]);
-
-    } else if (pieceOnSquare && pieceOnSquare.color === learnGame.turn()) {
-        // Vérifier si c'est la pièce autorisée par la leçon
+    } else if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
+        // --- No Piece Selected, Clicking Own Piece ---
         if (lesson.showOnlyLegalMovesFor && lesson.showOnlyLegalMovesFor !== clickedAlg) {
             showFeedback(`Pour cette leçon, vous devez bouger la pièce en ${lesson.showOnlyLegalMovesFor}.`, 'error');
             return;
         }
 
-        // Sélectionner la pièce
         selectedSquareAlg = clickedAlg;
-        chessboardEl.querySelectorAll('.square.selected').forEach(el => el.classList.remove('selected'));
         square.classList.add('selected');
+        let moves = learnGame.moves({ square: clickedAlg, verbose: true });
 
-        // Afficher les coups légaux
-        let possibleMoves = learnGame.moves({ square: clickedAlg, verbose: true });
-        let allowedMoves = possibleMoves;
-
-        // Filtrer les coups selon les contraintes de la leçon
-        if (lesson.allowedMoves) {
-            allowedMoves = possibleMoves.filter(m => lesson.allowedMoves.includes(m.san));
-        } else if (lesson.validateMove) {
-            allowedMoves = possibleMoves.filter(m => lesson.validateMove(m));
-        } else if (highlightedSquares.target.length > 0) {
-            allowedMoves = possibleMoves.filter(m => highlightedSquares.target.includes(m.to));
+        // Filter moves based on lesson constraints
+        if (lesson.allowedMoves || lesson.validateMove || highlightedSquares.target.length > 0) {
+            moves = moves.filter(m => {
+                if (lesson.allowedMoves) return lesson.allowedMoves.includes(m.san);
+                if (lesson.validateMove) return lesson.validateMove(m);
+                return highlightedSquares.target.includes(m.to);
+            });
         }
 
-        highlightMoves_Learn(allowedMoves);
-    } else {
-        // Clic sur case vide ou pièce adverse
-        selectedSquareAlg = null;
-        chessboardEl.querySelectorAll('.square.selected').forEach(el => el.classList.remove('selected'));
-        highlightMoves_Learn([]);
+        highlightMoves_Learn(moves);
     }
 }
 

@@ -16,7 +16,7 @@
     --highlight-capture-color: rgba(0, 0, 0, 0.7);
     --highlight-selected-color: rgba(74, 102, 160, 0.4);
     --highlight-check-color: rgba(255, 0, 0, 0.5);
-    --highlight-last-move-color: #baca44;
+    --highlight-last-move-color: #b2c717;
     --border-radius: 12px;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --learn-color: #4caf50; /* Green for learning */
@@ -47,14 +47,14 @@
     object-fit: contain;
 }
 
-.square .piece {
-    position: relative;
-    z-index: 1;
+.square::after {
+    z-index: 0; /* Doit être derrière les pièces */
 }
 
-/* Place highlight (including last move) behind the piece */
-.square::after {
-    z-index: 0;
+/* Les images ou éléments représentant les pièces */
+.square .piece {
+    position: relative;
+    z-index: 1; /* Au-dessus du highlight */
 }
 
 body {
@@ -600,7 +600,15 @@ body.light-theme .black-piece {
 
 /* Last Move */
 .square.last-move::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background-color: var(--highlight-last-move-color);
+    z-index: 0; /* Derrière la pièce qui a z-index: 1 */
+    opacity: 0.6; /* Ajustez l'opacité selon vos préférences */
 }
 
 /* Player Info & Captured Pieces */
