@@ -132,7 +132,7 @@ function defineLessons() {
             objective: "Déplacez la tour blanche de a1 vers a5.",
             explanation: "La tour se déplace horizontalement ou verticalement, d'autant de cases libres qu'elle le souhaite. Elle ne peut pas sauter par-dessus d'autres pièces.",
             interactive: true,
-            setupFen: '8/8/8/8/8/8/PPPPPPPP/R3K2R w KQ - 0 1', // Position modifiée pour isoler la tour
+            setupFen: '8/8/8/8/8/8/8/R3K2R w KQ - 0 1', // Position modifiée pour isoler la tour
             highlightSquares: { piece: ['a1'], target: ['a5'] },
             allowedMoves: ['Ra5'],
             showOnlyLegalMovesFor: 'a1',
