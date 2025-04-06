@@ -99,6 +99,7 @@
          #review-best-move { font-size: 1em; min-height: 1.2em;}
          #review-best-move span { font-weight: bold; background-color: var(--secondary-color); padding: 2px 5px; border-radius: 4px; margin-left: 5px;}
          #played-move-info { font-size: 0.95em; font-style: italic; opacity: 0.9; min-height: 1.1em; margin-top: 5px; }
+         #review-good-strategy { font-size: 0.95em; font-style: italic; opacity: 0.9; min-height: 1.1em; margin-top: 5px; }
 
          /* Header & Status */
          .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; width: 100%; }
@@ -176,7 +177,7 @@
                      <label><input type="checkbox" id="filter-played" checked> Coup Joué</label>
                      <label><input type="checkbox" id="filter-best" checked> Meilleur Coup</label>
                      <label><input type="checkbox" id="filter-pv"> Stratégie (PV)</label>
-                     <label><input type="checkbox" id="filter-threats"> Menaces</label>
+                     <label><input type="checkbox" id="filter-threats"> Piece en prise</label>
                  </div>
                 <div class="analysis-info">
                      <h3>Évaluation Actuelle</h3>
@@ -187,6 +188,7 @@
                      <div id="review-score">N/A</div>
                      <div id="review-best-move">Meilleur: <span>N/A</span></div>
                      <div id="played-move-info"></div> <!-- Classification / Info sur coup joué -->
+                     <div id="review-good-strategy">La bonne strategie: <span>N/A</span></div>
                  </div>
             </div>
 

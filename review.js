@@ -18,6 +18,7 @@ const btnLast = document.getElementById('btn-last');
 const analysisProgressText = document.getElementById('analysis-progress-text');
 const overlaySvg = document.getElementById('board-overlay');
 const pgnHeadersDisplayEl = document.getElementById('pgn-headers-display');
+const goodStrategyEl = document.getElementById('review-good-strategy')?.querySelector('span');
 
 // Filters
 const filterPlayedEl = document.getElementById('filter-played');
@@ -60,14 +61,74 @@ const ARROW_COLORS = {
     played: 'rgba(60, 100, 180, 0.75)', // Blueish
     best: 'rgba(40, 160, 40, 0.85)',     // Green
     pv: ['rgba(255, 165, 0, 0.7)', 'rgba(255, 140, 0, 0.6)', 'rgba(255, 115, 0, 0.5)'], // Oranges
-    threat: 'rgba(200, 40, 40, 0.6)'      // Red for highlight
+    threat: 'rgba(200, 40, 40, 0.6)'      // Red for capture indication
 };
 const ARROW_THICKNESS = {
     played: 5,
     best: 7, // Thicker best move arrow
-    pv: [5, 4, 3] // Decreasing thickness for PV
+    pv: [5, 4, 3], // Decreasing thickness for PV
+    threat: 5 // Thickness for capture arrows
 };
 
+// NEW: Draw an arrow with a numbered label near its midpoint
+function drawArrowWithNumber(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = null, thickness = 6, labelNumber = 1) {
+    if (!overlaySvg || !boardRect || squareSize <= 0) return;
+    const start = algToPixel(fromAlg);
+    const end = algToPixel(toAlg);
+    if (!start || !end) {
+         console.warn(`Cannot draw arrow, invalid coords: ${fromAlg} -> ${toAlg}`);
+         return;
+    }
+    const svgNs = "http://www.w3.org/2000/svg";
+    const arrowId = `arrow-marker-${id || color.replace(/[^a-zA-Z0-9]/g, '')}`;
+    
+    // Create marker if needed
+    let marker = overlaySvg.querySelector(`marker#${arrowId}`);
+    if (!marker) {
+         marker = document.createElementNS(svgNs, 'marker');
+         marker.setAttribute('id', arrowId);
+         marker.setAttribute('viewBox', '0 0 10 10');
+         marker.setAttribute('refX', '8');
+         marker.setAttribute('refY', '5');
+         marker.setAttribute('markerUnits', 'strokeWidth');
+         marker.setAttribute('markerWidth', thickness * 0.8);
+         marker.setAttribute('markerHeight', thickness * 0.8);
+         marker.setAttribute('orient', 'auto-start-reverse');
+         const path = document.createElementNS(svgNs, 'path');
+         path.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+         path.setAttribute('fill', color);
+         marker.appendChild(path);
+         let defs = overlaySvg.querySelector('defs');
+         if (!defs) {
+             defs = document.createElementNS(svgNs, 'defs');
+             overlaySvg.insertBefore(defs, overlaySvg.firstChild);
+         }
+         defs.appendChild(marker);
+    }
+    // Draw the arrow line
+    const line = document.createElementNS(svgNs, 'line');
+    line.setAttribute('x1', start.x);
+    line.setAttribute('y1', start.y);
+    line.setAttribute('x2', end.x);
+    line.setAttribute('y2', end.y);
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', thickness);
+    line.setAttribute('stroke-linecap', 'round');
+    line.setAttribute('marker-end', `url(#${arrowId})`);
+    overlaySvg.appendChild(line);
+    // Compute midpoint for the number label
+    const midX = (start.x + end.x) / 2;
+    const midY = (start.y + end.y) / 2;
+    const text = document.createElementNS(svgNs, 'text');
+    text.setAttribute('x', midX);
+    text.setAttribute('y', midY);
+    text.setAttribute('fill', color);
+    text.setAttribute('font-size', thickness * 1.5);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.textContent = labelNumber;
+    overlaySvg.appendChild(text);
+}
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -800,13 +861,35 @@ function updateMoveListClassification(moveIndex, classificationText) {
      spanElement.title = classificationText || ''; // Set tooltip text
 }
 
+function updateGoodStrategyDisplay() {
+    const strategyEl = document.getElementById('review-good-strategy');
+    if (!strategyEl) return;
+    let strategyText = "N/A";
+    // Use the analysis from the position BEFORE the last move if available
+    if (currentMoveIndex >= 0) {
+         const analysisPrev = moveAnalysisData[currentMoveIndex];
+         if (analysisPrev?.pv && analysisPrev.pv.length > 0 && analysisPrev.pv.length <= 4) {
+              const tempGame = new Chess(analysisPrev.fen_after);
+              const movesSAN = [];
+              for (const moveUci of analysisPrev.pv) {
+                  const moveObj = tempGame.move(moveUci, { sloppy: true });
+                  if (!moveObj) break;
+                  movesSAN.push(moveObj.san);
+              }
+              if (movesSAN.length > 0) {
+                  strategyText = movesSAN.join(' - ');
+              }
+         }
+    }
+    strategyEl.querySelector('span').textContent = strategyText;
+}
 
 function updateAnalysisDisplayForCurrentMove() {
-    const displayIndex = currentMoveIndex + 1; // Index in moveAnalysisData for the position *currently displayed*
+    const displayIndex = currentMoveIndex + 1;
     if (displayIndex < 0 || displayIndex >= moveAnalysisData.length) {
          console.warn("Analysis display update requested for invalid index:", displayIndex);
          clearAnalysisUI();
-        return;
+         return;
     }
 
     const analysisResult = moveAnalysisData[displayIndex];
@@ -887,6 +970,9 @@ function updateAnalysisDisplayForCurrentMove() {
               playedMoveInfoEl.textContent = ""; // Initial position
          }
      }
+
+    // --- Update Good Strategy Display ---
+    updateGoodStrategyDisplay();
 }
 
 
@@ -1072,13 +1158,29 @@ function updateBoardOverlays() {
          }
      }
 
-     // 4. Threats (Squares attacked by opponent in CURRENT position)
+     // 4. Capture Moves ("Piece en prise")
      if (filterThreatsEl?.checked) {
-          const opponentColor = reviewGame.turn() === 'w' ? 'b' : 'w';
-          const attackedSquares = getSquaresAttackedBy(reviewGame.fen(), opponentColor);
-          attackedSquares.forEach(sq => {
-              highlightSquare(sq, ARROW_COLORS.threat, squareSize * 0.18); // Slightly smaller radius
-          });
+         // Instead of generating attacked squares, iterate over the board
+         const board = reviewGame.board();
+         for (let r = 0; r < 8; r++) {
+             for (let c = 0; c < 8; c++) {
+                 const piece = board[r]?.[c];
+                 if (piece) {
+                     const fromAlg = files[c] + (8 - r);
+                     // Get capturing moves for the piece
+                     const moves = reviewGame.moves({ square: fromAlg, verbose: true });
+                     const captureMoves = moves.filter(m => m.captured);
+                     if (captureMoves.length > 0) {
+                         // Highlight the piece that can capture
+                         highlightSquare(fromAlg, ARROW_COLORS.threat, squareSize * 0.25);
+                         // Draw numbered arrows for up to 4 capture moves
+                         captureMoves.slice(0, 4).forEach((move, index) => {
+                             drawArrowWithNumber(fromAlg, move.to, ARROW_COLORS.threat, `capture-${fromAlg}-${move.to}-${index}`, ARROW_THICKNESS.threat, index + 1);
+                         });
+                     }
+                 }
+             }
+         }
      }
 }
 

@@ -394,7 +394,7 @@ function loadSavedSettings() {
     const delaySetting = localStorage.getItem('chess-ai-delay');
     aiDelayEnabled = (delaySetting !== 'off');
     if (aiDelayToggle) {
-         aiDelayToggle.innerHTML = `<i class="fas fa-clock"></i> ${aiDelayEnabled ? 'ON' : 'OFF'}`;
+         aiDelayToggle.innerHTML = `${aiDelayEnabled ? 'ON' : 'OFF'}`;
     }
 
     // Piece Render Mode
@@ -764,16 +764,29 @@ function gameResultToPGN(gameInstance) {
     return "*"; // Default if somehow game_over but no specific condition met
 }
 
+const difficultyRatings = { 
+    'Learn': 600, 
+    'Noob': 800, 
+    'Easy': 1000, 
+    'Regular': 1200, 
+    'Hard': 1400, 
+    'Very Hard': 1600, 
+    'Super Hard': 1800, 
+    'Magnus Carlsen': 2850, 
+    'Unbeatable': 3000, 
+    'Adaptative': aiRating,
+    'AI100': 100,
+    'AI200': 200
+};
 
-// --- Game Review (Analysis) --- STUB ---
 // --- Game Review (Analysis) --- MODIFIED ---
 function initiateGameReview() {
-    // Check if review possible (same checks as before)
+    // Vérifier que l'analyse est possible
     if (isReviewing) {
         showToast("Analyse déjà en cours.", 'fa-hourglass-half');
         return;
     }
-    if (!isGameOver) { // Only allow review after game is over
+    if (!isGameOver) {
         showToast("L'analyse est disponible après la fin de la partie.", 'fa-info-circle');
         return;
     }
@@ -781,47 +794,50 @@ function initiateGameReview() {
         showToast("Aucun coup à analyser.", 'fa-info-circle');
         return;
     }
-     if (!isStockfishReady) { // Check if engine is ready for potential analysis page use
-          showToast("Moteur d'analyse non prêt.", 'fa-cog');
-         // Note: review page will need its own engine instance anyway
-         // return; // Maybe allow navigation without analysis? Let's proceed.
-     }
+    if (!isStockfishReady) {
+        showToast("Moteur d'analyse non prêt.", 'fa-cog');
+    }
 
     console.log("--- Initiating Game Review ---");
-    showGameEndModal(false); // Hide end modal if open
+    showGameEndModal(false); // Masquer le modal de fin
+
+    const difficultyRatings = {
+        'Learn': 600,
+        'Noob': 800,
+        'Easy': 1000,
+        'Regular': 1200,
+        'Hard': 1400,
+        'Very Hard': 1600,
+        'Super Hard': 1800,
+        'Magnus Carlsen': 2850,
+        'Unbeatable': 3000,
+        'Adaptative': aiRating,
+        'AI100': 100,
+        'AI200': 200
+    };
+
+    const pgnHeaders = {
+        Event: "Partie locale analysée",
+        Site: "DFWS Chess App",
+        Date: new Date().toISOString().split('T')[0],
+        Round: gamesPlayed.toString(),
+        White: player1NameEl?.textContent || "Joueur Blanc",
+        Black: player2NameEl?.textContent || "Joueur Noir",
+        Result: gameResultToPGN(game),
+        ...(gameMode === 'ai' && { WhiteElo: playerRating.toString() }),
+        ...(gameMode === 'ai' && { BlackElo: (difficultyRatings[aiDifficulty] || aiRating).toString() }),
+        ...(selectedTimeMode !== 'unlimited' && { TimeControl: `${TIME_SETTINGS[selectedTimeMode]}+0` })
+    };
 
     try {
-        // Generate PGN with headers
-        const pgnHeaders = {
-            Event: "Partie locale analysée",
-            Site: "DFWS Chess App",
-            Date: new Date().toISOString().split('T')[0],
-            Round: gamesPlayed.toString(),
-            White: player1NameEl?.textContent || "Joueur Blanc",
-            Black: player2NameEl?.textContent || "Joueur Noir",
-            Result: gameResultToPGN(game), // Get final result
-             // Add Elo if available
-            ...(gameMode === 'ai' && { WhiteElo: playerRating.toString() }),
-             ...(gameMode === 'ai' && { BlackElo: (difficultyRatings[aiDifficulty] || aiRating).toString() }), // Use helper map or current aiRating
-             ...(selectedTimeMode !== 'unlimited' && { TimeControl: `${TIME_SETTINGS[selectedTimeMode]}+0` })
-        };
-        // Helper map defined elsewhere for AI Elo display
-        const difficultyRatings = { 'Learn': 600, 'Noob': 800, 'Easy': 1000, 'Regular': 1200, 'Hard': 1400, 'Very Hard': 1600, 'Super Hard': 1800, 'Magnus Carlsen': 2850, 'Unbeatable': 3000, 'Adaptative': aiRating };
-
-
         const pgn = game.pgn({ headers: pgnHeaders });
-
-        // Store PGN in localStorage for the review page to pick up
         localStorage.setItem('reviewGamePGN', pgn);
         console.log("PGN stored for review.");
-
-        // Redirect to the review page
-        window.location.href = 'review.html'; // Navigate to the new page
-
+        window.location.href = 'review.html';
     } catch (error) {
         console.error("Failed to generate PGN for review:", error);
         showToast("Erreur lors de la préparation de l'analyse.", 'fa-times-circle');
-        isReviewing = false; // Reset flag on error
+        isReviewing = false;
         updateControlsState();
     }
 }
@@ -1178,6 +1194,11 @@ function makeMove(fromAlg, toAlg, promotionChoice = null) {
     updateAllUI(); // Update timers, captured pieces, progress bar, ratings, turn indicator
     checkAndUpdateKingStatus(); // Highlight king if needed FOR THE NEW PLAYER whose turn it is
 
+    // Affichage de la réaction textuelle de l'IA après coup du joueur (Blanc en mode IA)
+    if (gameMode === 'ai' && currentTurn === 'w' && !isGameOver) {
+        showAIReaction(moveResult.san);
+    }
+
     // Check if the game ended due to this move
     if (!checkGameEndConditions()) {
         // Game continues, update status text
@@ -1195,6 +1216,26 @@ function makeMove(fromAlg, toAlg, promotionChoice = null) {
     return true; // Move was successful
 }
 
+// Nouvelle fonction pour afficher la réaction textuelle de l'IA
+function showAIReaction(playerMoveSAN) {
+    const reactions = [
+        "Intéressant coup !",
+        "Pas mal, mais tu peux mieux faire.",
+        "Hmm, je m'attendais à autre chose...",
+        "Erreur flagrante !",
+        "Bien joué... pour un débutant ?",
+        "Je vais te battre maintenant !"
+    ];
+    const reaction = reactions[Math.floor(Math.random() * reactions.length)];
+    const bubble = document.getElementById('black-chat-bubble');
+    if (bubble) {
+        bubble.textContent = reaction;
+        bubble.style.display = 'block';
+        setTimeout(() => {
+            bubble.style.display = 'none';
+        }, 3000); // Afficher pendant 3 secondes
+    }
+}
 
 // --- User Interaction (Click Handler) ---
 function handleSquareClick(event) {
@@ -1673,7 +1714,7 @@ function updateRatings(playerWonVsAI) { // playerWonVsAI: true (player win), fal
     // Find AI rating based on difficulty (could be more sophisticated)
     const difficultyRatings = { // Approximate ELOs
         'Learn': 600, 'Noob': 800, 'Easy': 1000, 'Regular': 1200, 'Hard': 1400,
-        'Very Hard': 1600, 'Super Hard': 1800, 'Magnus Carlsen': 2850, 'Unbeatable': 3000, 'Adaptative': aiRating // Use current adaptive rating
+        'Very Hard': 1600, 'Super Hard': 1800, 'Magnus Carlsen': 2850, 'Unbeatable': 3000, 'Adaptative': aiRating, 'AI100': 100, 'AI200': 200
     };
     // Use a default if difficulty string is weird, or use the stored aiRating for adaptive
      const currentAIRating = difficultyRatings[aiDifficulty] || 1200; // Fallback to 1200
@@ -1713,7 +1754,7 @@ function updateRatingDisplay() {
     if (gameMode === 'ai') {
         p1Name = "Joueur"; p1Elo = playerRating.toString();
         // Get AI rating for display
-         const difficultyRatings = { 'Learn': 600, 'Noob': 800, 'Easy': 1000, 'Regular': 1200, 'Hard': 1400, 'Very Hard': 1600, 'Super Hard': 1800, 'Magnus Carlsen': 2850, 'Unbeatable': 3000, 'Adaptative': aiRating };
+         const difficultyRatings = { 'Learn': 600, 'Noob': 800, 'Easy': 1000, 'Regular': 1200, 'Hard': 1400, 'Very Hard': 1600, 'Super Hard': 1800, 'Magnus Carlsen': 2850, 'Unbeatable': 3000, 'Adaptative': aiRating, 'AI100': 100, 'AI200': 200 };
          const displayAIRating = difficultyRatings[aiDifficulty] || "?";
          p2Name = `IA (${aiDifficulty || '?'})`; p2Elo = displayAIRating.toString();
     } else if (gameMode === 'human') {

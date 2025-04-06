@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles-v2.css">
 </head>
+
 <body>
     <div class="app-container">
         <header>
@@ -31,7 +33,11 @@
                 <i class="fas fa-chess-pawn"></i>
             </button>
             <button id="ai-delay-toggle" class="control-button" title="Basculer Délai IA">
-                <i class="fas fa-clock"></i> ON
+                <i class="fas fa-clock"></i>
+            </button>
+            <button id="mode-puzzle" class="mode-button">
+                <i class="fas fa-puzzle-piece"></i>
+                <span>Puzzles</span>
             </button>
         </div>
 
@@ -71,7 +77,8 @@
                     <span>Illimité</span>
                 </button>
             </div>
-            <button id="back-to-mode" class="btn secondary-btn" style="margin-top: 20px;"><i class="fas fa-arrow-left"></i> Retour Mode</button>
+            <button id="back-to-mode" class="btn secondary-btn" style="margin-top: 20px;"><i
+                    class="fas fa-arrow-left"></i> Retour Mode</button>
         </div>
 
         <!-- Sélection Difficulté IA vs IA -->
@@ -81,65 +88,228 @@
             <div class="ai-difficulty-options">
                 <div class="ai-diff-group">
                     <h3>IA Blanc</h3>
-                    <button data-difficulty="Learn" data-color="white" class="difficulty-button difficulty-learn"><span>Léo Apprenti (600)</span><div class="level-indicator"><div class="level-bar" style="width:5%"></div></div></button>
-                    <button data-difficulty="Noob" data-color="white" class="difficulty-button"><span>Jean Noob (800)</span><div class="level-indicator"><div class="level-bar" style="width:10%"></div></div></button>
-                    <button data-difficulty="Easy" data-color="white" class="difficulty-button"><span>Pierre Facile (1000)</span><div class="level-indicator"><div class="level-bar" style="width:25%"></div></div></button>
-                    <button data-difficulty="Regular" data-color="white" class="difficulty-button"><span>Marc Normal (1200)</span><div class="level-indicator"><div class="level-bar" style="width:40%"></div></div></button>
-                    <button data-difficulty="Hard" data-color="white" class="difficulty-button"><span>Luc Difficile (1400)</span><div class="level-indicator"><div class="level-bar" style="width:60%"></div></div></button>
-                    <button data-difficulty="Very Hard" data-color="white" class="difficulty-button"><span>Victor T. Difficile (1600)</span><div class="level-indicator"><div class="level-bar" style="width:75%"></div></div></button>
-                    <button data-difficulty="Super Hard" data-color="white" class="difficulty-button"><span>Sacha Expert (1800)</span><div class="level-indicator"><div class="level-bar" style="width:85%"></div></div></button>
-                    <button data-difficulty="Magnus Carlsen" data-color="white" class="difficulty-button"><span>M. Carlsen (2850)</span><div class="level-indicator"><div class="level-bar" style="width:95%"></div></div></button>
-                    <button data-difficulty="Unbeatable" data-color="white" class="difficulty-button"><span>Invinci Bill (3000)</span><div class="level-indicator"><div class="level-bar" style="width:100%"></div></div></button>
-                    <button data-difficulty="Adaptative" data-color="white" class="difficulty-button"><span>Adam Adaptatif (Var)</span><div class="level-indicator"><div class="level-bar adaptive"></div></div></button>
+                    <button data-difficulty="Learn" data-color="white"
+                        class="difficulty-button difficulty-learn"><span>Léo Apprenti (600)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:5%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Noob" data-color="white" class="difficulty-button"><span>Jean Noob
+                            (800)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:10%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Easy" data-color="white" class="difficulty-button"><span>Pierre Facile
+                            (1000)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:25%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Regular" data-color="white" class="difficulty-button"><span>Marc Normal
+                            (1200)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:40%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Hard" data-color="white" class="difficulty-button"><span>Luc Difficile
+                            (1400)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:60%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Very Hard" data-color="white" class="difficulty-button"><span>Victor T.
+                            Difficile (1600)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:75%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Super Hard" data-color="white" class="difficulty-button"><span>Sacha Expert
+                            (1800)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:85%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Magnus Carlsen" data-color="white" class="difficulty-button"><span>M.
+                            Carlsen (2850)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:95%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Unbeatable" data-color="white" class="difficulty-button"><span>Invinci Bill
+                            (3000)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:100%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Adaptative" data-color="white" class="difficulty-button"><span>Adam
+                            Adaptatif (Var)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar adaptive"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="AI100" data-color="white" class="difficulty-button">
+                        <span>IA Faible (100)</span>
+                    </button>
+                    <button data-difficulty="AI200" data-color="white" class="difficulty-button">
+                        <span>IA Faible (200)</span>
+                    </button>
                 </div>
                 <div class="ai-diff-group">
                     <h3>IA Noir</h3>
-                    <button data-difficulty="Learn" data-color="black" class="difficulty-button difficulty-learn"><span>Léo Apprenti (600)</span><div class="level-indicator"><div class="level-bar" style="width:5%"></div></div></button>
-                    <button data-difficulty="Noob" data-color="black" class="difficulty-button"><span>Jean Noob (800)</span><div class="level-indicator"><div class="level-bar" style="width:10%"></div></div></button>
-                    <button data-difficulty="Easy" data-color="black" class="difficulty-button"><span>Pierre Facile (1000)</span><div class="level-indicator"><div class="level-bar" style="width:25%"></div></div></button>
-                    <button data-difficulty="Regular" data-color="black" class="difficulty-button"><span>Marc Normal (1200)</span><div class="level-indicator"><div class="level-bar" style="width:40%"></div></div></button>
-                    <button data-difficulty="Hard" data-color="black" class="difficulty-button"><span>Luc Difficile (1400)</span><div class="level-indicator"><div class="level-bar" style="width:60%"></div></div></button>
-                    <button data-difficulty="Very Hard" data-color="black" class="difficulty-button"><span>Victor T. Difficile (1600)</span><div class="level-indicator"><div class="level-bar" style="width:75%"></div></div></button>
-                    <button data-difficulty="Super Hard" data-color="black" class="difficulty-button"><span>Sacha Expert (1800)</span><div class="level-indicator"><div class="level-bar" style="width:85%"></div></div></button>
-                    <button data-difficulty="Magnus Carlsen" data-color="black" class="difficulty-button"><span>M. Carlsen (2850)</span><div class="level-indicator"><div class="level-bar" style="width:95%"></div></div></button>
-                    <button data-difficulty="Unbeatable" data-color="black" class="difficulty-button"><span>Invinci Bill (3000)</span><div class="level-indicator"><div class="level-bar" style="width:100%"></div></div></button>
-                    <button data-difficulty="Adaptative" data-color="black" class="difficulty-button"><span>Adam Adaptatif (Var)</span><div class="level-indicator"><div class="level-bar adaptive"></div></div></button>
+                    <button data-difficulty="Learn" data-color="black"
+                        class="difficulty-button difficulty-learn"><span>Léo Apprenti (600)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:5%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Noob" data-color="black" class="difficulty-button"><span>Jean Noob
+                            (800)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:10%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Easy" data-color="black" class="difficulty-button"><span>Pierre Facile
+                            (1000)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:25%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Regular" data-color="black" class="difficulty-button"><span>Marc Normal
+                            (1200)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:40%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Hard" data-color="black" class="difficulty-button"><span>Luc Difficile
+                            (1400)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:60%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Very Hard" data-color="black" class="difficulty-button"><span>Victor T.
+                            Difficile (1600)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:75%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Super Hard" data-color="black" class="difficulty-button"><span>Sacha Expert
+                            (1800)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:85%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Magnus Carlsen" data-color="black" class="difficulty-button"><span>M.
+                            Carlsen (2850)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:95%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Unbeatable" data-color="black" class="difficulty-button"><span>Invinci Bill
+                            (3000)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar" style="width:100%"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="Adaptative" data-color="black" class="difficulty-button"><span>Adam
+                            Adaptatif (Var)</span>
+                        <div class="level-indicator">
+                            <div class="level-bar adaptive"></div>
+                        </div>
+                    </button>
+                    <button data-difficulty="AI100" data-color="black" class="difficulty-button">
+                        <span>IA Faible (100)</span>
+                    </button>
+                    <button data-difficulty="AI200" data-color="black" class="difficulty-button">
+                        <span>IA Faible (200)</span>
+                    </button>
                 </div>
             </div>
-            <button id="back-to-mode-aivsai" class="btn secondary-btn" style="margin-top: 20px;"><i class="fas fa-arrow-left"></i> Retour Mode</button>
+            <button id="back-to-mode-aivsai" class="btn secondary-btn" style="margin-top: 20px;"><i
+                    class="fas fa-arrow-left"></i> Retour Mode</button>
         </div>
 
         <!-- Sélection Difficulté IA (après sélection temps) -->
         <div id="difficulty-selection" class="menu-container" style="display:none;">
             <h2>Niveau de l'IA</h2>
             <div class="difficulty-options">
-                 <button data-difficulty="Learn" class="difficulty-button difficulty-learn"><span>Léo Apprenti (600)</span><div class="level-indicator"><div class="level-bar" style="width:5%"></div></div></button>
-                 <button data-difficulty="Noob" class="difficulty-button"><span>Jean Noob (800)</span><div class="level-indicator"><div class="level-bar" style="width:10%"></div></div></button>
-                 <button data-difficulty="Easy" class="difficulty-button"><span>Pierre Facile (1000)</span><div class="level-indicator"><div class="level-bar" style="width:25%"></div></div></button>
-                 <button data-difficulty="Regular" class="difficulty-button"><span>Marc Normal (1200)</span><div class="level-indicator"><div class="level-bar" style="width:40%"></div></div></button>
-                 <button data-difficulty="Hard" class="difficulty-button"><span>Luc Difficile (1400)</span><div class="level-indicator"><div class="level-bar" style="width:60%"></div></div></button>
-                 <button data-difficulty="Very Hard" class="difficulty-button"><span>Victor T. Difficile (1600)</span><div class="level-indicator"><div class="level-bar" style="width:75%"></div></div></button>
-                 <button data-difficulty="Super Hard" class="difficulty-button"><span>Sacha Expert (1800)</span><div class="level-indicator"><div class="level-bar" style="width:85%"></div></div></button>
-                 <button data-difficulty="Magnus Carlsen" class="difficulty-button"><span>M. Carlsen (2850)</span><div class="level-indicator"><div class="level-bar" style="width:95%"></div></div></button>
-                 <button data-difficulty="Unbeatable" class="difficulty-button"><span>Invinci Bill (3000)</span><div class="level-indicator"><div class="level-bar" style="width:100%"></div></div></button>
-                 <button data-difficulty="Adaptative" class="difficulty-button"><span>Adam Adaptatif (Var)</span><div class="level-indicator"><div class="level-bar adaptive"></div></div></button>
+                <button data-difficulty="Learn" class="difficulty-button difficulty-learn"><span>Léo Apprenti
+                        (600)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:5%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Noob" class="difficulty-button"><span>Jean Noob (800)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:10%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Easy" class="difficulty-button"><span>Pierre Facile (1000)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:25%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Regular" class="difficulty-button"><span>Marc Normal (1200)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:40%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Hard" class="difficulty-button"><span>Luc Difficile (1400)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:60%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Very Hard" class="difficulty-button"><span>Victor T. Difficile (1600)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:75%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Super Hard" class="difficulty-button"><span>Sacha Expert (1800)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:85%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Magnus Carlsen" class="difficulty-button"><span>M. Carlsen (2850)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:95%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Unbeatable" class="difficulty-button"><span>Invinci Bill (3000)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar" style="width:100%"></div>
+                    </div>
+                </button>
+                <button data-difficulty="Adaptative" class="difficulty-button"><span>Adam Adaptatif (Var)</span>
+                    <div class="level-indicator">
+                        <div class="level-bar adaptive"></div>
+                    </div>
+                </button>
+                <button data-difficulty="AI100" class="difficulty-button">
+                    <span>IA Faible (100)</span>
+                </button>
+                <button data-difficulty="AI200" class="difficulty-button">
+                    <span>IA Faible (200)</span>
+                </button>
             </div>
-             <button id="back-to-time" class="btn secondary-btn" style="margin-top: 20px;"><i class="fas fa-arrow-left"></i> Retour Temps</button>
+            <button id="back-to-time" class="btn secondary-btn" style="margin-top: 20px;"><i
+                    class="fas fa-arrow-left"></i> Retour Temps</button>
         </div>
 
         <!-- Structure Principale du Jeu -->
         <div class="game-layout" style="display: none;"> <!-- Initially hidden -->
             <!-- Colonne Gauche (Joueur Noir) -->
             <div class="left-sidebar">
-                 <div class="player-info player-info-black"> <!-- Classe ajoutée -->
-                     <div class="player-avatar"><i class="fas fa-user"></i></div>
-                     <div class="player-details">
-                         <span class="player-name">Joueur Noir</span>
-                         <span class="player-rating">1200</span> <!-- Rating Noir -->
-                     </div>
-                     <div id="black-time" class="time-display">--:--</div>
-                 </div>
-                 <div id="captured-white" class="captured-pieces"></div> <!-- Pièces Blanches capturées par Noir -->
+                <div class="player-info player-info-black"> <!-- Classe ajoutée -->
+                    <div class="player-avatar"><i class="fas fa-user"></i></div>
+                    <div class="player-details">
+                        <span class="player-name">Joueur Noir</span>
+                        <span class="player-rating">1200</span> <!-- Rating Noir -->
+                    </div>
+                    <div id="black-time" class="time-display">--:--</div>
+                </div>
+                <!-- Nouvelle chat bubble pour la réaction textuelle de l'IA -->
+                <div id="black-chat-bubble" class="chat-bubble chat-bubble-black" style="display: none;"></div>
+                <div id="captured-white" class="captured-pieces"></div> <!-- Pièces Blanches capturées par Noir -->
             </div>
 
             <!-- Zone Centrale (Échiquier) -->
@@ -170,19 +340,29 @@
                 </div>
                 <div id="captured-black" class="captured-pieces"></div>
 
-                 <!-- Contrôles de Partie -->
-                 <div class="game-controls">
-                     <button id="undo-button" disabled title="Annuler le dernier coup"><i class="fas fa-undo"></i></button>
-                     <button id="analyze-button" disabled title="Analyser la partie (après fin)"><i class="fas fa-search"></i></button> <!-- Review button -->
-                     <button id="export-button" disabled title="Exporter PGN"><i class="fas fa-download"></i></button> <!-- Export PGN button -->
-                     <button id="resign-button" disabled title="Abandonner la partie"><i class="fas fa-flag"></i></button>
-                 </div>
+                <!-- Contrôles de Partie -->
+                <div class="game-controls">
+                    <button id="undo-button" disabled title="Annuler le dernier coup"><i
+                            class="fas fa-undo"></i></button>
+                    <button id="analyze-button" disabled title="Analyser la partie (après fin)"><i
+                            class="fas fa-search"></i></button> <!-- Review button -->
+                    <button id="export-button" disabled title="Exporter PGN"><i class="fas fa-download"></i></button>
+                    <!-- Export PGN button -->
+                    <button id="resign-button" disabled title="Abandonner la partie"><i
+                            class="fas fa-flag"></i></button>
+                    <button id="hint-button" title="Indice" style="display: none;"><i
+                            class="fas fa-lightbulb"></i></button>
+                    <button id="next-puzzle-button" title="Puzzle Suivant" style="display: none;"><i
+                            class="fas fa-forward"></i></button>
+                    <button id="exit-puzzle-button" title="Quitter Puzzles" style="display: none;"><i
+                            class="fas fa-times-circle"></i></button>
+                </div>
 
-                 <!-- Historique des Coups -->
-                 <div class="moves-container">
-                     <h3>Historique</h3>
-                     <ol id="move-list"></ol>
-                 </div>
+                <!-- Historique des Coups -->
+                <div class="moves-container">
+                    <h3>Historique</h3>
+                    <ol id="move-list"></ol>
+                </div>
             </div>
         </div>
 
@@ -190,11 +370,16 @@
         <div id="statistics" class="stats-container" style="display: none;"> <!-- Initially hidden -->
             <h2>Statistiques (Vs IA)</h2>
             <div class="stats-grid">
-                <div class="stat-item"><span class="stat-label">Parties</span><span id="games-played" class="stat-value">0</span></div>
-                <div class="stat-item"><span class="stat-label">Victoires</span><span id="wins" class="stat-value">0</span></div>
-                <div class="stat-item"><span class="stat-label">Défaites</span><span id="losses" class="stat-value">0</span></div>
-                <div class="stat-item"><span class="stat-label">Nuls</span><span id="draws" class="stat-value">0</span></div>
-                <div class="stat-item" style="grid-column: 1 / -1;"><span class="stat-label">Mon Elo</span><span id="player-elo-stats" class="stat-value">1200</span></div>
+                <div class="stat-item"><span class="stat-label">Parties</span><span id="games-played"
+                        class="stat-value">0</span></div>
+                <div class="stat-item"><span class="stat-label">Victoires</span><span id="wins"
+                        class="stat-value">0</span></div>
+                <div class="stat-item"><span class="stat-label">Défaites</span><span id="losses"
+                        class="stat-value">0</span></div>
+                <div class="stat-item"><span class="stat-label">Nuls</span><span id="draws" class="stat-value">0</span>
+                </div>
+                <div class="stat-item" style="grid-column: 1 / -1;"><span class="stat-label">Mon Elo</span><span
+                        id="player-elo-stats" class="stat-value">1200</span></div>
             </div>
         </div>
 
@@ -203,7 +388,9 @@
     <!-- Modales -->
     <div id="promotion-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header"><h3>Choisissez une pièce</h3></div>
+            <div class="modal-header">
+                <h3>Choisissez une pièce</h3>
+            </div>
             <div class="promotion-options"></div>
             <!-- Add cancel button? -->
         </div>
@@ -211,14 +398,18 @@
 
     <div id="game-end-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header"><h3 id="game-end-message"></h3></div>
+            <div class="modal-header">
+                <h3 id="game-end-message"></h3>
+            </div>
             <div class="modal-body">
                 <!-- Maybe show final position snapshot or scores? -->
             </div>
             <div class="modal-footer">
-                 <button id="analyze-game-modal-button" class="btn secondary-btn"><i class="fas fa-search"></i> Analyser</button>
-                 <button id="play-again" class="btn primary-btn"><i class="fas fa-redo"></i> Rejouer</button>
-                 <button id="main-menu-button" class="btn secondary-btn"><i class="fas fa-list"></i> Menu Principal</button>
+                <button id="analyze-game-modal-button" class="btn secondary-btn"><i class="fas fa-search"></i>
+                    Analyser</button>
+                <button id="play-again" class="btn primary-btn"><i class="fas fa-redo"></i> Rejouer</button>
+                <button id="main-menu-button" class="btn secondary-btn"><i class="fas fa-list"></i> Menu
+                    Principal</button>
             </div>
         </div>
     </div>
@@ -233,8 +424,10 @@
         import { Chess } from './chess.js';
         window.Chess = Chess;
     </script>
-    <script src="scripts-v2.js" type="module"></script>
+    <script src="puzzle.js"></script>
+    <script src="scripts-v3.js" type="module"></script>
     <!-- stockfish.wasm.js is loaded as a worker inside scripts-v1.js -->
 
 </body>
+
 </html>

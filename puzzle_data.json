@@ -1,0 +1,331 @@
+[
+    {
+      "id": "mate_in_1_001",
+      "fen": "r1bq2r1/ppp1kpp1/2np1n1p/8/2B1P3/1Q6/PPPP1PPP/RNB1K1NR w KQ - 0 1",
+      "solution": ["b3f7"],
+      "playerColor": "w",
+      "description": "White to play: Mate in 1"
+    },
+    {
+      "id": "mate_in_1_002",
+      "fen": "3r1k2/p1q2p1p/1p1R4/2p1Q3/N1P5/1P6/P4PPP/6K1 w - - 0 1",
+      "solution": ["d6d8"],
+      "playerColor": "w",
+      "description": "White to play: Mate in 1 (Queen exchange)"
+    },
+    {
+      "id": "mate_in_1_003",
+      "fen": "k7/1p1p1p2/p1p1p1p1/P1P1P1P1/1P1P1P1p/3P3P/3K4/8 w - - 0 1",
+      "solution": ["d2d3"],
+      "playerColor": "w",
+      "description": "White to play: Stalemate (Tricky!)"
+    },
+      {
+      "id": "mate_in_1_004_b",
+      "fen": "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 0 1",
+      "solution": ["g4h4"],
+      "playerColor": "b",
+      "description": "Black to play: Mate in 1 (Fool's Mate setup)"
+    },
+    {
+      "id": "mate_in_2_001",
+      "fen": "r1b1k2r/pp1p1ppp/1qn1p3/2b1P3/1n1N4/P1N5/1PPQBPPP/R1B1K2R w KQkq - 0 1",
+      "solution": ["d4b3", "c5f2", "e1d1"],
+      "playerColor": "w",
+      "description": "White to play: Mate in 2 (Starts with Knight move)"
+    },
+    {
+      "id": "mate_in_2_002",
+      "fen": "5rk1/1p3ppp/p1p1p3/3n4/3P4/Pq2P1P1/1P3PBP/2R2RK1 b - - 0 1",
+      "solution": ["b3b2", "c1b1", "b2a3", "b1b7"],
+      "playerColor": "b",
+      "description": "Black to play: Win a pawn"
+    },
+    {
+      "id": "mate_in_2_003_b",
+      "fen": "1k1r3r/pppq1pp1/3p1n2/3P4/2PQP1pP/2N3P1/PP6/R3K2R b KQ - 0 1",
+      "solution": ["h8h4", "g3h4", "d8h8"],
+      "playerColor": "b",
+      "description": "Black to play: Mate in 2 (Rook sacrifice)"
+    },
+     {
+      "id": "mate_in_3_001",
+      "fen": "r5k1/pbp2ppp/1p1qp1n1/8/3P4/1P1BP3/P1Q1NPPP/2R3K1 w - - 0 1",
+      "solution": ["c2c7", "d6c7", "c1c7", "b7d5", "e2c3"],
+      "playerColor": "w",
+      "description": "White to play: Mate in 3 (Endgame tactic)"
+    },
+    {
+      "id": "win_queen_001",
+      "fen": "rnbqkb1r/pp3ppp/3p1n2/4p3/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1",
+      "solution": ["d4b5", "a7a6", "b5a3"],
+      "playerColor": "w",
+      "description": "White to play: Win the Queen (discovered attack)"
+    },
+    {
+      "id": "win_material_001",
+      "fen": "rn1qkbnr/pbp2ppp/1p1p4/4p3/2B1P3/2P2N2/PP1P1PPP/RNBQK2R w KQkq - 0 1",
+      "solution": ["c4f7"],
+      "playerColor": "w",
+      "description": "White to play: Win material (Bishop sacrifice)"
+    },
+    {
+      "id": "fork_001",
+      "fen": "r3k2r/pp1n1ppp/2p1pn2/q7/1b1P1B2/2N1PN2/PP3PPP/R2QK2R w KQkq - 0 1",
+      "solution": ["f3d2"],
+      "playerColor": "w",
+      "description": "White to play: Prepare a fork"
+    },
+     {
+      "id": "fork_002_b",
+      "fen": "2r3k1/p4p1p/1p2p1p1/3p4/3PnB2/P1q1P3/2R2PPP/Q1R3K1 b - - 0 1",
+      "solution": ["c3c2", "c1c2", "c8c2"],
+      "playerColor": "b",
+      "description": "Black to play: Knight fork after exchanges"
+    },
+     {
+      "id": "pin_001",
+      "fen": "rn1qk2r/pbpp1ppp/1p2pn2/8/1b1PP3/2NB1N2/PPP2PPP/R1BQK2R w KQkq - 0 1",
+      "solution": ["d3c4"],
+      "playerColor": "w",
+      "description": "White to play: Utilize the pin"
+    },
+     {
+      "id": "skewer_001",
+      "fen": "6k1/1p4p1/p1p1p2p/2P1P3/1P1r4/P1Q3P1/6KP/8 w - - 0 1",
+      "solution": ["c3d4"],
+      "playerColor": "w",
+      "description": "White to play: Skewer the rook"
+    },
+     {
+      "id": "discovered_attack_001",
+      "fen": "r1b1kbnr/pppp1ppp/2n5/4p3/1qBPP3/5N2/PPP2PPP/RNBQK2R w KQkq - 0 1",
+      "solution": ["c4f7"],
+      "playerColor": "w",
+      "description": "White to play: Discovered attack wins material"
+    },
+     {
+      "id": "defense_001",
+      "fen": "1r6/p1p1kpp1/1pBpbn1p/3P4/1P2P3/P4PPP/2RN4/6K1 b - - 0 1",
+      "solution": ["e6d7"],
+      "playerColor": "b",
+      "description": "Black to play: Defend the pinned piece"
+    },
+     {
+      "id": "defense_002",
+      "fen": "rnbqk2r/ppppp1bp/5np1/5pB1/2PP4/2N5/PP2PPPP/R2QKBNR w KQkq - 0 1",
+      "solution": ["g5f6", "g7f6"],
+      "playerColor": "w",
+      "description": "White to play: Best defensive capture"
+    },
+    {
+      "id": "promotion_tactic_001",
+      "fen": "k7/P7/KP6/8/8/8/8/8 w - - 0 1",
+      "solution": ["a6b5"],
+      "playerColor": "w",
+      "description": "White to play: Force promotion"
+    },
+    {
+      "id": "promotion_tactic_002_b",
+      "fen": "8/4k1P1/8/8/8/8/p7/K7 b - - 0 1",
+      "solution": ["e7f7"],
+      "playerColor": "b",
+      "description": "Black to play: Stop the pawn"
+    },
+    {
+      "id": "stalemate_trick_001",
+      "fen": "5k2/5P2/5K2/8/8/8/8/8 b - - 0 1",
+      "solution": [], // Black has no moves! Already stalemate. Need a setup where black *can* move into it.
+      "playerColor": "b",
+      "description": "Black to play: Stalemate (Already done!)"
+    },
+     {
+      "id": "stalemate_trick_002",
+      "fen": "k7/8/8/8/8/8/5ppp/7K w - - 0 1",
+      "solution": ["h1g1", "f2f1q"], // Black promotes, but it's stalemate
+      "playerColor": "w",
+      "description": "White to play: Allow promotion for stalemate"
+    },
+    {
+      "id": "opening_trap_001",
+      "fen": "rnbqkbnr/pp2pppp/3p4/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1",
+      "solution": ["f1c4", "e7e6", "d2d4"], // Sicilian setup, white develops
+      "playerColor": "w",
+      "description": "White to play: Standard development"
+    },
+    {
+      "id": "endgame_tactic_001",
+      "fen": "8/8/3k4/p1p1p1p1/P1P1P1P1/3K4/8/8 w - - 0 1",
+      "solution": ["d3e3"], // King opposition
+      "playerColor": "w",
+      "description": "White to play: Maintain opposition"
+    },
+     {
+      "id": "endgame_tactic_002_b",
+      "fen": "8/8/8/8/8/4k3/8/4K2R b K - 0 1",
+      "solution": ["h1h3"],
+      "playerColor": "b",
+      "description": "Black to play: Cut off the king"
+    },
+    {
+      "id": "zugzwang_001",
+      "fen": "8/8/8/8/4k3/8/4p3/4K3 w - - 0 1",
+      "solution": ["e1e2"], // Simple pawn capture, leads to draw zugzwang later often
+      "playerColor": "w",
+      "description": "White to play: Capture pawn"
+    },
+    {
+      "id": "clearance_001",
+      "fen": "r1bqk2r/pp1nbppp/2p1pn2/3p2B1/3PP3/2N2N2/PPPQ1PPP/R3KB1R w KQkq - 0 1",
+      "solution": ["e4e5"],
+      "playerColor": "w",
+      "description": "White to play: Clearance for development"
+    },
+     {
+      "id": "interference_001",
+      "fen": "3r4/pkp1N3/1p5p/6p1/PP6/6P1/7P/2R3K1 w - - 0 1",
+      "solution": ["e7c6"],
+      "playerColor": "w",
+      "description": "White to play: Interfere with rook defence"
+    },
+     {
+      "id": "overloading_001",
+      "fen": "r4rk1/ppp1qppp/2np1n2/8/2BPP1b1/P1N2N2/1P3PPP/R2QK2R w KQ - 0 1",
+      "solution": ["d4d5"],
+      "playerColor": "w",
+      "description": "White to play: Overload the defending knight"
+    },
+    {
+      "id": "perpetual_check_001",
+      "fen": "5r1k/1p1r1ppp/p1p1p3/4P3/1PqP4/P1N3Q1/6PP/3R2K1 w - - 0 1",
+      "solution": ["g3h4", "h8g8", "h4h7", "g8h7"], // Example leading towards perpetual, maybe not best move puzzle. Needs specific setup.
+      "playerColor": "w",
+      "description": "White to play: Start sequence (Example)"
+    },
+    {
+      "id": "simplification_001",
+      "fen": "rnb1k1nr/pp1p1p1p/6p1/q1pP4/8/2b5/PP1BPPPP/RN1QKBNR w KQkq - 0 1",
+      "solution": ["d2c3"],
+      "playerColor": "w",
+      "description": "White to play: Simplify by exchange"
+    },
+    {
+      "id": "greek_gift_start_001",
+      "fen": "r1bqk2r/pp1n1ppp/3bpn2/2p5/3pP3/3P1NP1/PPPN1PBP/R1BQR1K1 w kq - 0 1",
+      "solution": ["e4e5"], // Often precedes Bxh7+
+      "playerColor": "w",
+      "description": "White to play: Prepare Greek Gift (Open lines)"
+    },
+    {
+      "id": "intermediate_move_001_b",
+      "fen": "r3k2r/1ppqbppp/p1nppn2/8/1PPPP3/P1N1BN2/5PPP/R2Q1RK1 b kq - 0 1",
+      "solution": ["e7d8"], // Zwischenzug - save bishop before castling or other plans
+      "playerColor": "b",
+      "description": "Black to play: Intermediate move (Save piece)"
+    },
+     {
+      "id": "remove_defender_001",
+      "fen": "rn2kbnr/pp2qppp/2p1p3/3p1b2/3P1B2/2N1PN2/PPP2PPP/R2QKB1R w KQkq - 0 1",
+      "solution": ["f4g5"], // Attack queen defending f5 bishop
+      "playerColor": "w",
+      "description": "White to play: Remove the defender (Queen)"
+    },
+    {
+      "id": "sacrifice_win_001",
+      "fen": "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 0 1",
+      "solution": ["f3e5"], // Sacrifice knight to win pawn and tempo
+      "playerColor": "w",
+      "description": "White to play: Knight sacrifice"
+    },
+    {
+      "id": "underpromotion_001",
+      "fen": "8/P1k5/8/8/8/8/5K2/8 w - - 0 1",
+      "solution": ["a7a8n"], // Promote to Knight for check/avoid stalemate
+      "playerColor": "w",
+      "description": "White to play: Underpromote to Knight"
+    },
+     {
+      "id": "windmills_001",
+      "fen": "6k1/r4p1p/p5p1/R7/8/8/P1r2PPP/4R1K1 w - - 0 1",
+      "solution": ["e1e8", "g8g7", "e8c8"], // Start of a rook windmill pattern
+      "playerColor": "w",
+      "description": "White to play: Start a windmill"
+    },
+    {
+      "id": "trapped_piece_001",
+      "fen": "rnb1kbnr/pp1ppppp/8/q1p5/8/P1N5/1PPPPPPP/R1BQKBNR w KQkq - 0 1",
+      "solution": ["a1b1"], // Prepare b4 to trap queen
+      "playerColor": "w",
+      "description": "White to play: Trap the Queen"
+    },
+    {
+      "id": "attack_f7_001",
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1",
+      "solution": ["f1c4"], // Target f7 early
+      "playerColor": "w",
+      "description": "White to play: Develop Bishop to attack f7"
+    },
+    {
+      "id": "king_hunt_001",
+      "fen": "r4rk1/1bq2ppp/p3pb2/1p1n4/3N4/PPNB4/2PQ1PPP/R3R1K1 w - - 0 1",
+      "solution": ["c3d5", "c7d7", "d5f6"], // Example, not a full hunt
+      "playerColor": "w",
+      "description": "White to play: Start weakening King's position"
+    },
+    {
+      "id": "queen_sac_mate_001",
+      "fen": "5rk1/p1p1bppp/2pp1n2/q3P3/1r6/1PN2Q2/PBP2PPP/1K1RR3 w - - 0 1",
+      "solution": ["f3c6"], // Example, maybe leads to sac later
+      "playerColor": "w",
+      "description": "White to play: Aggressive Queen move"
+    },
+    {
+      "id": "double_check_001",
+      "fen": "r1bqkb1r/ppp1pppp/3p1n2/3Pn3/8/2N2N2/PPP2PPP/R1BQKB1R w KQkq - 0 1",
+      "solution": ["f3e5", "d6e5", "f1b5"], // Discovered check after capture
+      "playerColor": "w",
+      "description": "White to play: Create a discovered check"
+    },
+    {
+      "id": "pawn_breakthrough_001",
+      "fen": "8/8/4k3/p1p1p1p1/P1P1P1P1/4K3/8/8 w - - 0 1",
+      "solution": ["e3d3"], // King maneuvering for pawn endgame
+      "playerColor": "w",
+      "description": "White to play: King maneuver"
+    },
+    {
+      "id": "fortress_001_b",
+      "fen": "8/8/8/5k2/5p2/5K2/8/7B b - - 0 1",
+      "solution": ["f5e5"], // Black holds the draw in fortress
+      "playerColor": "b",
+      "description": "Black to play: Maintain the fortress"
+    },
+    {
+      "id": "back_rank_mate_001",
+      "fen": "6k1/p4ppp/1p6/2p1Q3/8/P1P3P1/1P1r1P1P/R5K1 w - - 0 1",
+      "solution": ["e5e8"],
+      "playerColor": "w",
+      "description": "White to play: Back rank mate in 1"
+    },
+    {
+      "id": "back_rank_mate_002_b",
+      "fen": "R6k/P7/8/8/8/8/8/7K b - - 0 1",
+      "solution": ["a8g8"], // Defend back rank mate
+      "playerColor": "b",
+      "description": "Black to play: Defend back rank"
+    },
+    {
+      "id": "smothered_mate_001",
+      "fen": "r1bqkbnr/p1pp1p1p/1p4p1/4Q3/2B1P3/8/PPP2PPP/RNB1K1NR b KQkq - 0 1",
+      "solution": ["g8e7", "e5h8"], // Leads to setup, not the mate itself
+      "playerColor": "b",
+      "description": "Black to play: Block check (example step)"
+    },
+    {
+      "id": "anastasia_mate_setup_001",
+      "fen": "r3k2r/p1qpppbp/1pn3p1/2p1N3/3P4/1PP1P1Pb/PB1Q1P1P/RN2KBR1 w Qkq - 0 1",
+      "solution": ["e5h8"], // Setup for potential Anastasia's Mate
+      "playerColor": "w",
+      "description": "White to play: Capture on h8"
+    }
+  ]

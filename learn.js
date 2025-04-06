@@ -1,4 +1,4 @@
-import { Chess } from './chess.js';
+import { Chess } from './chess.js'; // Assurez-vous que le chemin est correct
 
 // --- DOM Elements ---
 const chessboardEl = document.getElementById('chessboard');
@@ -12,66 +12,100 @@ const resetExerciseBtn = document.getElementById('reset-exercise');
 
 // --- Constants and State ---
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+// Lire le mode de rendu préféré (ou utiliser PNG par défaut)
 const pieceRenderMode = localStorage.getItem('chess-render-mode') || 'png';
-const pieces = {
-    'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
-    'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙'
+const pieces = { // Pour le rendu ASCII
+    'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟', // noir
+    'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙'  // blanc
 };
 
-let learnGame = new Chess();
+let learnGame = new Chess(); // Instance de chess.js pour les leçons
 let currentLessonIndex = 0;
-let lessons = [];
-let selectedSquareAlg = null;
-let lessonState = 'waiting';
-let highlightedSquares = { piece: [], target: [], allowed: [] };
-let lastMoveHighlight = null;
-let isGuidedMode = false;
+let lessons = []; // Sera rempli par defineLessons()
+let selectedSquareAlg = null; // Case sélectionnée (ex: 'e2')
+let lessonState = 'waiting'; // 'waiting', 'completed'
+let highlightedSquares = { piece: [], target: [], allowed: [] }; // Pour les highlights spécifiques à la leçon
+let lastMoveHighlight = null; // Pour highlight le dernier coup { from: 'e2', to: 'e4' }
+let isGuidedMode = false; // Pour le mode pratique après les leçons
 
 // --- Feedback System ---
 function showFeedback(message, type = 'info') {
-    if (!lessonFeedbackEl) return;
+    if (!lessonFeedbackEl) {
+        console.error("Feedback element not found!");
+        return;
+    }
 
-    // Remove all previous feedback classes
+    // Retirer les anciennes classes de type
     lessonFeedbackEl.classList.remove('success', 'error', 'info');
 
-    // Add new feedback class
-    lessonFeedbackEl.classList.add(type);
+    // Ajouter la nouvelle classe de type
+    if (type) lessonFeedbackEl.classList.add(type);
+
     lessonFeedbackEl.textContent = message;
 
-    // Make visible
+    // Rendre visible (via classe CSS)
     lessonFeedbackEl.classList.add('visible');
 
-    // Optional: Auto-hide after a delay for success/info messages
-    if (type !== 'error') {
+    // Optionnel: Cacher automatiquement après un délai pour succès/info
+    if (type === 'success' || type === 'info') {
         setTimeout(() => {
-            clearFeedback();
+            // Vérifier si le message est toujours le même avant de cacher
+            if (lessonFeedbackEl.textContent === message) {
+                clearFeedback();
+            }
         }, 3000);
     }
 }
 
 function clearFeedback() {
     if (!lessonFeedbackEl) return;
-    lessonFeedbackEl.classList.remove('visible', 'success', 'error', 'info');
-    lessonFeedbackEl.textContent = '';
+    lessonFeedbackEl.classList.remove('visible');
+    // Optionnel : retirer le texte immédiatement ou laisser l'animation faire
+    // lessonFeedbackEl.textContent = '';
+    // Retirer les classes de type après l'animation (ou immédiatement)
+    lessonFeedbackEl.classList.remove('success', 'error', 'info');
 }
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    lessons = defineLessons(); // ASSIGNER LES LEÇONS à la variable globale
-    setupLessonUI();
-    loadLesson(currentLessonIndex);
-    applyTheme();
+    lessons = defineLessons(); // Charger la définition des leçons
+    if (!lessons || lessons.length === 0) {
+        showFeedback("Erreur: Aucune leçon définie.", "error");
+        return;
+    }
+    setupLessonUI(); // Configurer les boutons etc.
+    applyTheme(); // Appliquer le thème (minimaliste)
+    loadLesson(currentLessonIndex); // Charger la première leçon
 });
 
-// Si vous n'avez pas encore défini la fonction applyTheme, ajoutez-la comme suit :
+// Fonction applyTheme (placeholder - adaptez si vous avez un système de thème)
 function applyTheme() {
-    // Implémentation minimaliste ou aucun changement de thème
-    console.log("applyTheme() called - aucun thème spécifique n'est appliqué.");
+    // Lire le thème depuis localStorage et l'appliquer au body si nécessaire
+    const savedTheme = localStorage.getItem('chess-theme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+    } else {
+        document.body.classList.remove('light-theme'); // Default is dark or based on styles-v2.css
+    }
+    console.log(`Theme applied: ${savedTheme || 'default'}`);
+    // Si vous changez les couleurs via JS, faites-le ici
+    // createBoard_Learn() // Pourrait être nécessaire si les couleurs des cases changent dynamiquement
 }
 
+// Configure les écouteurs d'événements pour les boutons
 function setupLessonUI() {
+    if (!prevLessonBtn || !nextLessonBtn || !resetExerciseBtn) {
+        console.error("One or more navigation buttons not found!");
+        return;
+    }
     prevLessonBtn.onclick = () => loadLesson(currentLessonIndex - 1);
-    nextLessonBtn.onclick = () => loadLesson(currentLessonIndex + 1);
+    nextLessonBtn.onclick = () => {
+        if (lessonState === 'completed' || !lessons[currentLessonIndex]?.interactive) {
+            loadLesson(currentLessonIndex + 1);
+        } else {
+            showFeedback("Terminez l'objectif actuel avant de passer à la suite.", "info");
+        }
+    };
     resetExerciseBtn.onclick = () => {
         if (isGuidedMode) {
             startGuidedMode(); // Réinitialise la partie guidée
@@ -81,10 +115,9 @@ function setupLessonUI() {
     };
 }
 
+// Définition de toutes les leçons
 function defineLessons() {
-    // Déclare 'lessons' avec 'const' pour qu'elle soit locale à la fonction
-    // et retourne le tableau à la fin.
-    const lessons = [
+    return [
         // 0: Introduction
         {
             title: "Bienvenue !",
@@ -100,8 +133,8 @@ function defineLessons() {
             explanation: "Le pion est la pièce la plus nombreuse. Lors de son tout premier coup, un pion peut avancer d'une OU de deux cases tout droit. Ensuite, il ne peut avancer que d'une case à la fois.",
             interactive: true,
             setupFen: 'start', // Position de départ
-            highlightSquares: { piece: ['e2'], target: ['e4'] },
-            allowedMoves: ['e4'], // Seul coup SAN autorisé (notation simplifiée pour pion)
+            highlightSquares: { piece: ['e2'], target: ['e4'], allowed: ['e3','e4'] }, // Montre e3 et e4 comme permis
+            allowedMoves: ['e4'], // Seul coup SAN autorisé pour VALIDER la leçon
             showOnlyLegalMovesFor: 'e2', // Ne montrer que les coups pour ce pion
         },
         // 2: Le Pion (Avancer - 1 case)
@@ -110,8 +143,8 @@ function defineLessons() {
             objective: "Déplacez le pion blanc en e4 d'une case vers e5.",
             explanation: "Après son premier coup, le pion ne peut avancer que d'une seule case tout droit. Il ne peut jamais reculer.",
             interactive: true,
-            setupFen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', // Après 1. e4
-            highlightSquares: { piece: ['e4'], target: ['e5'] },
+            setupFen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1', // Après 1. e3 ou 1.e4 (FEN après 1.e4 fourni initialement est bon: rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1)
+            highlightSquares: { piece: ['e4'], target: ['e5'], allowed: ['e5'] },
             allowedMoves: ['e5'],
             showOnlyLegalMovesFor: 'e4',
         },
@@ -122,8 +155,8 @@ function defineLessons() {
             explanation: "Le pion capture différemment de son déplacement : il capture en diagonale, d'une case vers l'avant. Il ne peut pas capturer tout droit.",
             interactive: true,
             setupFen: 'rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2', // Après 1.e4 d5
-            highlightSquares: { piece: ['e4'], target: ['d5'] },
-            allowedMoves: ['exd5'], // Notation de capture
+            highlightSquares: { piece: ['e4'], target: ['d5'], allowed: ['e5', 'd5'] }, // Montre avance et capture
+            allowedMoves: ['exd5'], // Notation de capture pour valider
             showOnlyLegalMovesFor: 'e4',
         },
         // 4: La Tour
@@ -133,24 +166,19 @@ function defineLessons() {
             explanation: "La tour se déplace horizontalement ou verticalement, d'autant de cases libres qu'elle le souhaite. Elle ne peut pas sauter par-dessus d'autres pièces.",
             interactive: true,
             setupFen: '8/8/8/8/8/8/8/R3K2R w KQ - 0 1', // Position modifiée pour isoler la tour
-            highlightSquares: { piece: ['a1'], target: ['a5'] },
+            highlightSquares: { piece: ['a1'], target: ['a5'], allowed: ['a2','a3','a4','a5','a6','a7','a8', 'b1', 'c1', 'd1'] }, // Toutes cases libres
             allowedMoves: ['Ra5'],
             showOnlyLegalMovesFor: 'a1',
         },
         // 5: Le Fou
         {
-            // CORRECTION : L'objectif initial (c1->f4) était impossible dans la FEN fournie (bloqué par e2)
-            // et incohérent avec highlightSquares et validateMove (qui pointaient vers f1->c4).
-            // J'ai corrigé l'objectif pour correspondre à un coup possible et aux autres paramètres.
             title: "Le Fou",
-            objective: "Déplacez le fou blanc de f1 vers c4.", // Objectif corrigé
+            objective: "Déplacez le fou blanc de f1 vers c4.", // Objectif corrigé et cohérent
             explanation: "Le fou se déplace en diagonale, d'autant de cases libres qu'il le souhaite. Un fou reste toujours sur les cases de sa couleur initiale (fou de cases blanches ou fou de cases noires). Il ne peut pas sauter par-dessus d'autres pièces.",
             interactive: true,
-            // FEN après 1.e4 - Le fou f1 peut bouger, c1 est bloqué.
-            setupFen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1',
-            highlightSquares: { piece: ['f1'], target: ['c4'] },
-            // Remplacé validateMove par allowedMoves pour la cohérence avec d'autres leçons simples
-            allowedMoves: ['Bc4'], // Utilisation de la notation SAN standard
+            setupFen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1', // Après 1.e4 - Fou f1 peut bouger
+            highlightSquares: { piece: ['f1'], target: ['c4'], allowed: ['e2', 'd3', 'c4', 'b5', 'a6'] }, // Cases libres diagonales
+            allowedMoves: ['Bc4'], // Utilisation de la notation SAN standard pour valider
             showOnlyLegalMovesFor: 'f1',
         },
         // 6: Le Cavalier
@@ -160,7 +188,7 @@ function defineLessons() {
             explanation: "Le cavalier a un déplacement unique en 'L' : deux cases dans une direction (horizontale ou verticale), puis une case perpendiculairement. C'est la seule pièce qui peut sauter par-dessus d'autres pièces.",
             interactive: true,
             setupFen: 'start',
-            highlightSquares: { piece: ['g1'], target: ['f3', 'h3'] }, // Montre les cibles possibles
+            highlightSquares: { piece: ['g1'], target: ['f3'], allowed: ['f3', 'h3'] }, // Montre les cibles possibles
             allowedMoves: ['Nf3'], // Objectif spécifique
             showOnlyLegalMovesFor: 'g1',
         },
@@ -170,11 +198,9 @@ function defineLessons() {
             objective: "Déplacez la Dame blanche de d1 vers h5.",
             explanation: "La Dame est la pièce la plus puissante. Elle combine les déplacements de la Tour ET du Fou : elle peut se déplacer horizontalement, verticalement ou en diagonale d'autant de cases libres qu'elle le souhaite.",
             interactive: true,
-            // FEN après 1.d4 e5 - Ouvre la diagonale pour la Dame
-             setupFen: 'rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP2PPP/RNBQKBNR w KQkq - 0 2',
-            highlightSquares: { piece: ['d1'], target: ['h5'] },
-            // Remplacé validateMove par allowedMoves pour la cohérence
-            allowedMoves: ['Qh5'],
+            setupFen: 'rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP2PPP/RNBQKBNR w KQkq - 0 2', // Après 1.d4 e5 - Ouvre un peu
+            highlightSquares: { piece: ['d1'], target: ['h5'], allowed: ['d2','d3','e2','f3','g4','h5'] }, // Cases libres
+            allowedMoves: ['Qh5'], // Valide avec ce coup
             showOnlyLegalMovesFor: 'd1',
         },
         // 8: Le Roi
@@ -183,209 +209,183 @@ function defineLessons() {
             objective: "Déplacez le Roi blanc de e1 vers f1.",
             explanation: "Le Roi est la pièce la plus importante, mais il est lent. Il peut se déplacer d'une seule case dans n'importe quelle direction (horizontale, verticale ou diagonale). Il ne peut jamais se déplacer sur une case attaquée par une pièce adverse.",
             interactive: true,
-             // FEN modifiée pour que le roi ait quelques coups, mais pas trop. e.g., après 1.e4
-            setupFen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PP3PPP/RNB1K1NR w KQkq - 0 1',
-            // Highlight uniquement les cases légales (f1, e2). d1 est bloqué, d2 est bloqué
-            highlightSquares: { piece: ['e1'], target: ['f1', 'e2'] },
+            setupFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQkq - 0 1', // Roi et tour h1 seulement
+            highlightSquares: { piece: ['e1'], target: ['f1'], allowed: ['d1','d2','e2','f1','f2'] }, // Cases libres et non attaquées
             allowedMoves: ['Kf1'], // Objectif simple
             showOnlyLegalMovesFor: 'e1',
         },
         // 9: Roque
         {
             title: "Le Roque",
-            objective: "Effectuez un petit roque (côté roi).", // Précision
+            objective: "Effectuez un petit roque (côté roi). Cliquez sur le roi (e1) puis sur sa case d'arrivée (g1).",
             explanation: "Le roque est un coup spécial impliquant le roi et une tour. Conditions : ni le roi ni la tour concernée ne doivent avoir bougé ; les cases entre eux doivent être libres ; le roi ne doit pas être en échec, ni traverser une case attaquée, ni atterrir sur une case attaquée. Ici, le roi (e1) va en g1 et la tour (h1) va en f1.",
             interactive: true,
             setupFen: 'rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQ - 0 1', // Position pour roque des deux côtés
-            highlightSquares: { piece: ['e1'], target: ['g1'] }, // Montre la case d'arrivée du roi
-            allowedMoves: ['O-O'], // Roque côté roi (petit roque)
+            highlightSquares: { piece: ['e1'], target: ['g1'], allowed: ['d1','d2','e2','f1','f2', 'c1', 'g1'] }, // Montre aussi les cases de roque c1 et g1
+            allowedMoves: ['O-O'], // Roque côté roi (petit roque) pour valider
             showOnlyLegalMovesFor: 'e1', // Montre le roque comme coup possible du roi
         },
         // 10: En Passant
         {
             title: "La Prise en Passant",
-            objective: "Capturez le pion noir en e5 'en passant' avec votre pion d5.",
-            explanation: "La prise 'en passant' est une règle spéciale pour les pions. Si un pion adverse avance de deux cases depuis sa position initiale et atterrit juste à côté de votre pion, votre pion peut le capturer comme s'il n'avait avancé que d'une case. Cette capture doit être effectuée immédiatement au coup suivant.",
+            objective: "Capturez le pion noir en e5 'en passant' avec votre pion d5. Cliquez sur d5 puis sur e6.",
+            explanation: "La prise 'en passant' est une règle spéciale pour les pions. Si un pion adverse avance de deux cases depuis sa position initiale et atterrit juste à côté de votre pion, votre pion peut le capturer comme s'il n'avait avancé que d'une case (sur la case e6 dans cet exemple). Cette capture doit être effectuée immédiatement au coup suivant.",
             interactive: true,
-            setupFen: 'rnbqkbnr/ppp2ppp/8/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 1',
-            highlightSquares: { piece: ['d5'], target: ['e6'] },
-            allowedMoves: ['dxe6'],
-            showOnlyLegalMovesFor: 'd5',
+            setupFen: 'rnbqkbnr/pp1p1ppp/8/2ppP3/8/8/PPP1PPPP/RNBQKBNR w KQkq d6 0 1',
+            highlightSquares: { piece: ['e5'], target: ['d6'], allowed: ['e6', 'd6'] }, // Montre avance et capture en passant
+            allowedMoves: ['exd6'], // Capture en passant pour valider
+            showOnlyLegalMovesFor: 'e5',
         },
-        // 11: Promotion
-        {
-            title: "La Promotion",
-            objective: "Avancez votre pion en a8 et promouvez-le en Dame.",
-            explanation: "Lorsqu'un pion atteint la dernière rangée (la 8e pour les Blancs, la 1ère pour les Noirs), il DOIT être immédiatement remplacé ('promu') par une autre pièce de sa couleur : Dame, Tour, Fou ou Cavalier (pas un autre pion ni un Roi). La Dame est le choix le plus fréquent car c'est la pièce la plus puissante.",
-            interactive: true,
-            setupFen: '1k6/P7/8/8/8/8/8/K7 w - - 0 1',
-            highlightSquares: { piece: ['a7'], target: ['a8'] },
-            allowedMoves: ['a8=Q'], // Fixed: Added =Q for queen promotion
-            showOnlyLegalMovesFor: 'a7',
-        },
-        // 12: Échec et Mat
-        {
-            title: "L'Échec et Mat",
-            objective: "Mettez le roi noir en échec et mat en un coup.",
-            explanation: "L'échec et mat termine la partie. Le roi est 'en échec' (attaqué) et il n'existe aucun coup légal pour parer cet échec (ni bouger le roi sur une case sûre, ni interposer une pièce, ni capturer la pièce qui attaque).",
-            interactive: true,
-            setupFen: '4k3/8/8/8/8/8/8/4K2Q w - - 0 1',
-            highlightSquares: { piece: ['h1'], target: ['h8'] },
-            allowedMoves: ['Qh8#'], // Fixed: Added # for checkmate
-            showOnlyLegalMovesFor: 'h1',
-        },
-        // 13: Pat
+        // 11: Pat
         {
             title: "Le Pat",
-            objective: "Jouez un coup qui met le roi noir en situation de Pat.",
-            explanation: "Le Pat est une cause de partie nulle. C'est une situation où le joueur dont c'est le tour n'a aucun coup légal à jouer, MAIS son roi n'est PAS en échec. Si c'est le seul coup possible qui mène au Pat, il faut le jouer.",
+            objective: "Jouez un coup avec la Dame qui met le roi noir en situation de Pat (partie nulle).",
+            explanation: "Le Pat est une cause de partie nulle. C'est une situation où le joueur dont c'est le tour n'a aucun coup légal à jouer, MAIS son roi n'est PAS en échec. Trouvez le coup de Dame qui bloque toutes les cases du roi noir sans le mettre en échec.",
             interactive: true,
-            // Position où la Dame blanche peut forcer le Pat. Roi noir en h8, Dame blanche en f7.
-             setupFen: '7k/5Q2/8/8/8/8/8/4K3 w - - 0 1',
-            highlightSquares: { piece: ['f7'], target: ['g6'] }, // Jouer Qg6 laisse le roi noir sans coup légal et non en échec.
-            allowedMoves: ['Qg6'], // Ce coup crée le Pat
+             // Position où la Dame blanche peut forcer le Pat. Roi noir en h8, Dame blanche en f7. Roi blanc ailleurs.
+            setupFen: '7k/5Q2/8/8/8/8/8/4K3 w - - 0 1',
+            highlightSquares: { piece: ['f7'], target: ['g6'], allowed: ['f8','f6','f5','f4','f3','f2','f1', 'e8','d7','c6','b5','a4', 'e7','d7','c7','b7','a7', 'g7','h7','g8','h8','g6','h5'] }, // Montre toutes cases + la case cible du Pat
+            allowedMoves: ['Qg6'], // Ce coup crée le Pat et valide
             showOnlyLegalMovesFor: 'f7',
         },
         // 14: Conclusion
         {
-            title: "Bravo !", // Singulier est peut-être plus courant
-            objective: "Vous avez appris les bases du déplacement des pièces et quelques règles spéciales.", // Phrase complétée
-            explanation: "C'est un excellent début ! Le meilleur moyen de progresser est de jouer et d'analyser vos parties. Continuez à pratiquer !",
+            title: "Bravo !",
+            objective: "Vous avez appris les bases du déplacement des pièces et quelques règles spéciales.",
+            explanation: "C'est un excellent début ! Le meilleur moyen de progresser est de jouer et d'analyser vos parties. Vous pouvez utiliser le mode 'Pratique Guidée' (si activé après) ou retourner au jeu principal. Continuez à pratiquer !",
             interactive: false,
         }
     ];
-
-    // Retourne le tableau de leçons
-    return lessons;
 }
 
+// Charge une leçon spécifique par son index
 function loadLesson(index) {
     if (index < 0 || index >= lessons.length) {
         console.warn(`Lesson index ${index} out of bounds.`);
+        // Gérer: rester sur la leçon actuelle ou aller au menu ?
+        if (index >= lessons.length) {
+             currentLessonIndex = lessons.length - 1; // Bloquer à la dernière leçon
+             nextLessonBtn.disabled = true;
+        } else {
+            currentLessonIndex = 0; // Retourner à la première
+            prevLessonBtn.disabled = true;
+        }
         return;
     }
 
     currentLessonIndex = index;
     const lesson = lessons[currentLessonIndex];
-    
-    // Réinitialiser l'état
-    selectedSquareAlg = null;
-    lessonState = 'waiting';
-    lastMoveHighlight = null;
-    
-    // Mettre à jour l'interface
-    lessonTitleEl.textContent = lesson.title;
-    lessonObjectiveEl.textContent = lesson.objective;
-    lessonExplanationEl.textContent = lesson.explanation;
-
-    // Configurer les highlights
-    highlightedSquares = lesson.highlightSquares || { piece: [], target: [], allowed: [] };
-
-    // Configurer le plateau
-    if (lesson.setupFen === 'start' || !lesson.setupFen) {
-        learnGame.reset();
-    } else {
-        try {
-            const loaded = learnGame.load(lesson.setupFen);
-            if (!loaded) throw new Error("Failed to load FEN");
-        } catch (e) {
-            console.error(`Failed to load FEN "${lesson.setupFen}"`, e);
-            return;
-        }
+    if (!lesson) {
+        console.error(`Lesson at index ${index} is undefined.`);
+        return;
     }
 
-    // Mettre à jour les boutons
+    // Réinitialiser l'état pour la nouvelle leçon
+    selectedSquareAlg = null;
+    lessonState = 'waiting'; // Important pour réactiver l'interactivité
+    lastMoveHighlight = null;
+    isGuidedMode = false; // Sortir du mode guidé si on navigue dans les leçons
+
+    // Mettre à jour l'interface utilisateur textuelle
+    lessonTitleEl.textContent = lesson.title || "Titre manquant";
+    lessonObjectiveEl.textContent = lesson.objective || "Objectif manquant";
+    lessonExplanationEl.textContent = lesson.explanation || "Explication manquante";
+
+    // Configurer les highlights spécifiques à la leçon
+    highlightedSquares = lesson.highlightSquares || { piece: [], target: [], allowed: [] };
+
+    // Configurer le plateau d'échecs (via FEN)
+    try {
+        if (lesson.setupFen === 'start' || !lesson.setupFen) {
+            learnGame.reset();
+        } else {
+            const loaded = learnGame.load(lesson.setupFen);
+            if (!loaded) {
+                throw new Error(`Invalid FEN string: ${lesson.setupFen}`);
+            }
+        }
+        console.log(`Lesson ${index} loaded. FEN: ${learnGame.fen()}`);
+    } catch (e) {
+        console.error(`Failed to load FEN for lesson ${index}: "${lesson.setupFen}"`, e);
+        showFeedback(`Erreur de chargement de la leçon (FEN invalide).`, 'error');
+        // Empêcher l'interaction sur cette leçon?
+         lessonState = 'error';
+        chessboardEl.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">Erreur FEN</div>`;
+        return; // Ne pas continuer si FEN invalide
+    }
+
+    // Mettre à jour l'état des boutons de navigation
     prevLessonBtn.disabled = currentLessonIndex <= 0;
     nextLessonBtn.disabled = currentLessonIndex >= lessons.length - 1;
-    resetExerciseBtn.disabled = false;
+     // Activer "Suivant" si la leçon n'est pas interactive ou déjà complétée (pour navigation facile)
+    if (!lesson.interactive || lessonState === 'completed') {
+         // Pas besoin d'activer spécifiquement ici, la logique du bouton le gère
+    }
 
-    clearFeedback();
-    createBoard_Learn();
+    resetExerciseBtn.disabled = !lesson.interactive; // Désactiver Réessayer pour les leçons non interactives
+    resetExerciseBtn.innerHTML = '<i class="fas fa-undo"></i> Réessayer'; // Texte standard
+
+    clearFeedback(); // Effacer le feedback précédent
+    createBoard_Learn(); // Dessiner le plateau pour la leçon
 }
 
+// Appelé quand le joueur réussit l'objectif de la leçon interactive
 function completeLessonStep() {
-    if (!lessons[currentLessonIndex]) return;
-    
+    if (!lessons[currentLessonIndex] || lessonState === 'completed') return; // Evite double appel
+
     lessonState = 'completed';
-    showFeedback("Excellent !", 'success');
-    
+    showFeedback("Excellent ! Objectif atteint.", 'success');
+
+    // Enlever les highlights spécifiques à la leçon après succès? Optionnel.
+     highlightedSquares = { piece: [], target: [], allowed: [] }; // Reset highlights
+     createBoard_Learn(); // Redessine sans les highlights de leçon mais garde le last move
+
+    // Activer le bouton suivant
+    nextLessonBtn.disabled = currentLessonIndex >= lessons.length - 1;
+
+    // Passer automatiquement à la leçon suivante après un court délai
     setTimeout(() => {
-        if (currentLessonIndex < lessons.length - 1) {
+        // Vérifier si on est toujours sur la même leçon avant de passer
+        if (lessonState === 'completed' && currentLessonIndex < lessons.length - 1) {
             loadLesson(currentLessonIndex + 1);
-        } else {
-            startGuidedMode();
+        } else if (currentLessonIndex >= lessons.length - 1) {
+            // Peut-être démarrer le mode guidé ici si souhaité
+             // startGuidedMode();
+             showFeedback("Bravo, vous avez terminé toutes les leçons !", "success");
+             nextLessonBtn.disabled = true; // Assurer que Suivant est désactivé
         }
-    }, 1500);
+    }, 1500); // 1.5 secondes
 }
 
+// --- Fonctions pour le Mode Guidé (Post-Leçons) ---
 function startGuidedMode() {
+    console.log("Starting Guided Mode");
     isGuidedMode = true;
-    learnGame.reset();
+    learnGame.reset(); // Nouvelle partie standard
 
     lessonTitleEl.textContent = "Mode Pratique Guidée";
-    lessonObjectiveEl.textContent = "Jouez librement avec les conseils du coach";
-    lessonExplanationEl.textContent = "Utilisez ce que vous avez appris. Faites des coups et recevez des suggestions.";
+    lessonObjectiveEl.textContent = "Jouez une partie complète. Cliquez sur une pièce pour voir ses coups.";
+    lessonExplanationEl.textContent = "Utilisez ce que vous avez appris. Faites des coups, l'ordinateur répondra (si configuré).";
 
+    // Adapter les contrôles
     nextLessonBtn.style.display = 'none';
     prevLessonBtn.style.display = 'none';
-    resetExerciseBtn.textContent = 'Nouvelle Partie';
+    resetExerciseBtn.innerHTML = '<i class="fas fa-redo"></i> Nouvelle Partie'; // Changer texte bouton reset
+    resetExerciseBtn.disabled = false;
 
-    createBoard_Learn();
+     // Réinitialiser highlights, état, etc.
+     highlightedSquares = { piece: [], target: [], allowed: [] };
+     selectedSquareAlg = null;
+     lastMoveHighlight = null;
+     lessonState = 'guided'; // Nouvel état
+
+    createBoard_Learn(); // Dessiner le plateau initial
     showFeedback("Mode pratique activé! Les blancs commencent.", 'info');
 }
 
+// Gestion des clics en mode guidé (simplifié)
 function handleGuidedMove(event) {
-    const square = event.currentTarget;
-    const row = parseInt(square.dataset.row);
-    const col = parseInt(square.dataset.col);
-    const clickedAlg = files[col] + (8 - row);
-    const pieceOnSquare = learnGame.get(clickedAlg);
-
-    if (selectedSquareAlg) {
-        try {
-            const move = learnGame.move({
-                from: selectedSquareAlg,
-                to: clickedAlg,
-                promotion: 'q'
-            });
-
-            if (move) {
-                lastMoveHighlight = { from: move.from, to: move.to };
-                selectedSquareAlg = null;
-                createBoard_Learn();
-                provideMoveAdvice();
-            }
-        } catch (e) {
-            showFeedback("Coup invalide", 'error');
-        }
-        selectedSquareAlg = null;
-        highlightMoves_Learn([]);
-    } else if (pieceOnSquare && pieceOnSquare.color === learnGame.turn()) {
-        selectedSquareAlg = clickedAlg;
-        const legalMoves = learnGame.moves({ square: clickedAlg, verbose: true });
-        highlightMoves_Learn(legalMoves);
-    }
-}
-
-function provideMoveAdvice() {
-    let advice = "";
-    if (learnGame.in_check()) {
-        advice = "Attention, vous êtes en échec! Protégez votre roi.";
-    } else if (learnGame.moves().length < 5) {
-        advice = "Attention aux pièces menacées!";
-    } else if (learnGame.turn() === 'w') {
-        advice = "Les blancs jouent. Pensez à développer vos pièces.";
-    } else {
-        advice = "Les noirs jouent. Contrôlez le centre.";
-    }
-    showFeedback(advice, 'info');
-}
-
-// --- Board Interaction (Lesson Specific) ---
-
-function handleSquareClick_Learn(event) {
-    const lesson = lessons[currentLessonIndex];
-    if (!lesson || !lesson.interactive || lessonState === 'completed') return;
+    if (lessonState !== 'guided' || learnGame.game_over()) return;
 
     const square = event.currentTarget;
     const row = parseInt(square.dataset.row);
@@ -394,91 +394,229 @@ function handleSquareClick_Learn(event) {
     const pieceOnSquare = learnGame.get(clickedAlg);
     const currentTurn = learnGame.turn();
 
-    if (selectedSquareAlg) {
-        // --- Piece Already Selected ---
-        const fromAlg = selectedSquareAlg;
+    clearFeedback(); // Efface l'ancien feedback
 
-        // Case 1: Clicked same square - Deselect
-        if (clickedAlg === fromAlg) {
-            square.classList.remove('selected');
+    if (selectedSquareAlg) {
+        // --- Piece déjà sélectionnée ---
+        if (clickedAlg === selectedSquareAlg) { // Clic sur la même case = Désélectionner
             selectedSquareAlg = null;
-            highlightMoves_Learn([]);
+            highlightMoves_Learn([]); // Utilise la fonction standard de highlight
+            createBoard_Learn(); // Redessine pour enlever 'selected'
             return;
         }
 
-        // Case 2: Attempt to move
-        const legalMovesForPiece = learnGame.moves({ square: fromAlg, verbose: true });
-        const targetMove = legalMovesForPiece.find(move => move.to === clickedAlg);
+        // Tentative de coup
+        try {
+            const fromAlg = selectedSquareAlg;
+            const fromPiece = learnGame.get(fromAlg);
+            const isPawnPromotion = fromPiece &&
+                fromPiece.type === 'p' &&
+                ((fromPiece.color === 'w' && row === 0) || (fromPiece.color === 'b' && row === 7));
 
-        if (targetMove) {
-            // Filter move based on lesson constraints
-            let isValidForLesson = true;
-            if (lesson.allowedMoves) {
-                isValidForLesson = lesson.allowedMoves.includes(targetMove.san);
-            } else if (lesson.validateMove) {
-                isValidForLesson = lesson.validateMove(targetMove);
+            let moveOptions = {
+                from: fromAlg,
+                to: clickedAlg
+            };
+            if (isPawnPromotion) {
+                moveOptions.promotion = 'q';
+            } else if (targetMoveObject && targetMoveObject.flags.includes('p')) {
+                moveOptions.promotion = 'q';
             }
 
-            try {
-                const moveOptions = {
-                    from: fromAlg,
-                    to: clickedAlg,
-                    promotion: targetMove.flags.includes('p') ? 'q' : undefined // Auto-promote to queen
-                };
+            const move = learnGame.move(moveOptions);
 
-                const move = learnGame.move(moveOptions);
-                if (move) {
-                    // Update last move highlight
-                    lastMoveHighlight = { from: move.from, to: move.to };
-                    selectedSquareAlg = null;
-                    createBoard_Learn();
+            if (move) { // Coup réussi
+                lastMoveHighlight = { from: move.from, to: move.to };
+                selectedSquareAlg = null;
+                createBoard_Learn(); // Redessine le plateau
+                checkGameEndState_Learn(); // Vérifie si la partie est finie
+
+                if (!learnGame.game_over()) {
+                    showFeedback(`Coup joué: ${move.san}. Au tour des ${learnGame.turn() === 'w' ? 'Blancs' : 'Noirs'}.`, 'info');
+                }
+
+            } else { // Coup illégal selon chess.js
+                showFeedback("Coup invalide.", 'error');
+            }
+        } catch (e) { // Erreur inattendue de chess.js
+            console.error("Error making move in guided mode:", e);
+            showFeedback("Erreur lors du déplacement.", 'error');
+            selectedSquareAlg = null; // Désélectionner en cas d'erreur grave
+            highlightMoves_Learn([]);
+            createBoard_Learn();
+        }
+
+    } else if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
+        // --- Sélection d'une pièce ---
+        selectedSquareAlg = clickedAlg;
+        const legalMoves = learnGame.moves({ square: clickedAlg, verbose: true });
+        createBoard_Learn(); // Redessine pour montrer 'selected' et highlights
+        highlightMoves_Learn(legalMoves); // Montre les coups légaux
+    } else {
+        // Clic invalide (case vide ou pièce adverse sans sélection)
+        selectedSquareAlg = null;
+        highlightMoves_Learn([]);
+        createBoard_Learn();
+    }
+}
+
+// Vérifie l'état de fin de partie en mode guidé
+function checkGameEndState_Learn() {
+    if (!learnGame.game_over()) return;
+
+    let endMessage = "Partie terminée.";
+    if (learnGame.in_checkmate()) {
+        endMessage = `Échec et Mat! ${learnGame.turn() === 'b' ? 'Les Blancs' : 'Les Noirs'} gagnent.`;
+    } else if (learnGame.in_stalemate()) {
+        endMessage = "Pat! Partie nulle.";
+    } else if (learnGame.in_draw()) {
+        endMessage = "Partie Nulle (Règle des 50 coups, répétition ou matériel insuffisant).";
+    }
+    showFeedback(endMessage, "info");
+    lessonState = 'ended'; // Marquer comme terminée
+}
+
+// --- Board Interaction (Lesson Specific) ---
+function handleSquareClick_Learn(event) {
+    // Si en mode guidé, utiliser la fonction dédiée
+    if (isGuidedMode || lessonState === 'guided') {
+        handleGuidedMove(event);
+        return;
+    }
+
+    // Logique pour les leçons interactives
+    const lesson = lessons[currentLessonIndex];
+    // Ignorer si leçon non interactive, terminée, ou erreur
+    if (!lesson || !lesson.interactive || lessonState === 'completed' || lessonState === 'error') return;
+
+    const square = event.currentTarget;
+    const row = parseInt(square.dataset.row);
+    const col = parseInt(square.dataset.col);
+    const clickedAlg = files[col] + (8 - row);
+    const pieceOnSquare = learnGame.get(clickedAlg);
+    const currentTurn = learnGame.turn(); // 'w' ou 'b'
+
+    clearFeedback(); // Effacer l'ancien feedback
+
+    if (selectedSquareAlg) {
+        // --- Pièce déjà sélectionnée ---
+        const fromAlg = selectedSquareAlg;
+        const fromPiece = learnGame.get(fromAlg);
+        const isPawnPromotion = fromPiece &&
+            fromPiece.type === 'p' &&
+            ((fromPiece.color === 'w' && row === 0) || (fromPiece.color === 'b' && row === 7));
+
+        const isClickingSameSquare = (clickedAlg === fromAlg);
+
+        // Si on clique sur la même case, on désélectionne
+        if (isClickingSameSquare) {
+            selectedSquareAlg = null;
+            highlightMoves_Learn([]); // Efface les highlights de coups
+            createBoard_Learn(); // Redessine pour enlever le 'selected'
+            return;
+        }
+
+        // Tenter de jouer le coup (fromAlg -> clickedAlg)
+        let targetMoveObject = null;
+        try {
+            // Vérifier si le coup est légal D'ABORD
+            const legalMovesForPiece = learnGame.moves({ square: fromAlg, verbose: true });
+            targetMoveObject = legalMovesForPiece.find(move => move.to === clickedAlg);
+
+            if (targetMoveObject) {
+                // Le coup est légal selon les règles des échecs.
+                // Maintenant, vérifier s'il correspond à l'objectif de la leçon.
+                let isValidForLesson = false;
+                if (lesson.allowedMoves) {
+                    // Vérifier si le SAN du coup légal est dans la liste des coups autorisés par la leçon
+                    isValidForLesson = lesson.allowedMoves.includes(targetMoveObject.san);
+                } else {
+                    // Si pas de allowedMoves, on considère tout coup légal comme valide pour la leçon (moins strict)
+                    // Ou on pourrait avoir une fonction lesson.validateMove(targetMoveObject) ici
+                    isValidForLesson = true; // Par défaut, si légal, c'est ok pour la leçon
+                }
+
+                // Exécuter le coup dans chess.js
+                let moveOptions = {
+                    from: fromAlg,
+                    to: clickedAlg
+                };
+                if (isPawnPromotion) {
+                    moveOptions.promotion = 'q';
+                } else if (targetMoveObject && targetMoveObject.flags.includes('p')) {
+                    moveOptions.promotion = 'q';
+                }
+
+                const moveResult = learnGame.move(moveOptions);
+
+                if (moveResult) {
+                    // Coup réussi dans chess.js
+                    lastMoveHighlight = { from: moveResult.from, to: moveResult.to };
+                    selectedSquareAlg = null; // Désélectionner logiquement
+                    createBoard_Learn(); // Redessiner le plateau après le coup
 
                     if (isValidForLesson) {
-                        completeLessonStep();
+                        completeLessonStep(); // Le coup est légal ET correspond à l'objectif
                     } else {
-                        showFeedback("Ce n'est pas le coup attendu pour cette leçon.", 'error');
+                        // Le coup était légal mais pas celui attendu pour la leçon
+                        showFeedback("C'est un coup légal, mais ce n'est pas l'objectif de cette leçon. Essayez autre chose.", 'error');
+                        // Annuler le coup pour permettre à l'utilisateur de réessayer
                         learnGame.undo();
-                        createBoard_Learn();
+                        lastMoveHighlight = null; // Effacer le highlight du coup annulé
+                        createBoard_Learn(); // Redessiner pour revenir à l'état précédent
                     }
+                } else {
+                    // Devrait être impossible si targetMoveObject a été trouvé, mais sécurité
+                    showFeedback("Erreur inattendue lors de la tentative de coup.", 'error');
+                    selectedSquareAlg = null;
+                    highlightMoves_Learn([]);
+                    createBoard_Learn();
                 }
-            } catch(e) {
-                showFeedback("Coup invalide", 'error');
-            }
-        } else {
-            // Case 3: Invalid destination or another piece
-            if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
-                // Switch selection to new piece
-                selectedSquareAlg = clickedAlg;
-                square.classList.add('selected');
-                const moves = learnGame.moves({ square: clickedAlg, verbose: true });
-                highlightMoves_Learn(moves);
+
             } else {
-                // Deselect on invalid target
-                selectedSquareAlg = null;
-                highlightMoves_Learn([]);
+                // Le coup fromAlg -> clickedAlg n'est pas légal.
+                // Vérifier si on a cliqué sur une autre pièce de la même couleur.
+                 if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
+                     // Oui, changer la sélection vers cette nouvelle pièce
+                     selectedSquareAlg = clickedAlg;
+                     highlightMoves_Learn([]); // Effacer anciens highlights
+                     const newMoves = learnGame.moves({ square: clickedAlg, verbose: true });
+                     createBoard_Learn(); // Redessiner (enlève ancienne sélection, ajoute nouvelle)
+                     highlightMoves_Learn(newMoves); // Afficher nouveaux coups
+                 } else {
+                     // Non, cliqué sur case vide ou pièce adverse (destination illégale)
+                     showFeedback("Ce coup n'est pas autorisé.", 'error');
+                 }
             }
-        }
-    } else if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
-        // --- No Piece Selected, Clicking Own Piece ---
-        if (lesson.showOnlyLegalMovesFor && lesson.showOnlyLegalMovesFor !== clickedAlg) {
-            showFeedback(`Pour cette leçon, vous devez bouger la pièce en ${lesson.showOnlyLegalMovesFor}.`, 'error');
-            return;
+
+        } catch (e) {
+            console.error("Error during move attempt:", e);
+            showFeedback("Une erreur s'est produite.", 'error');
+            selectedSquareAlg = null;
+            highlightMoves_Learn([]);
+            createBoard_Learn();
         }
 
+    } else if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
+        // --- Aucune pièce sélectionnée, clic sur une pièce valide ---
+        // Vérifier si c'est la pièce imposée par la leçon (si applicable)
+        if (lesson.showOnlyLegalMovesFor && lesson.showOnlyLegalMovesFor !== clickedAlg) {
+            showFeedback(`Pour cette leçon, vous devez interagir avec la pièce en ${lesson.showOnlyLegalMovesFor}.`, 'error');
+            return; // Ne pas sélectionner la mauvaise pièce
+        }
+
+        // Sélectionner la pièce
         selectedSquareAlg = clickedAlg;
-        square.classList.add('selected');
         let moves = learnGame.moves({ square: clickedAlg, verbose: true });
 
-        // Filter moves based on lesson constraints
-        if (lesson.allowedMoves || lesson.validateMove || highlightedSquares.target.length > 0) {
-            moves = moves.filter(m => {
-                if (lesson.allowedMoves) return lesson.allowedMoves.includes(m.san);
-                if (lesson.validateMove) return lesson.validateMove(m);
-                return highlightedSquares.target.includes(m.to);
-            });
-        }
+        createBoard_Learn(); // Redessine pour montrer la sélection
+        highlightMoves_Learn(moves); // Montre les coups légaux de la pièce sélectionnée
 
-        highlightMoves_Learn(moves);
+    } else {
+        // Clic sur case vide ou pièce adverse sans sélection préalable : ne rien faire
+        selectedSquareAlg = null;
+        highlightMoves_Learn([]);
+        createBoard_Learn();
     }
 }
 
@@ -486,120 +624,164 @@ function handleSquareClick_Learn(event) {
 // --- Board Rendering & Highlighting (Learn Specific) ---
 function createBoard_Learn() {
     if (!chessboardEl) {
-        console.error("Chessboard element not found!");
+        console.error("Chessboard element (#chessboard) not found!");
         return;
     }
-    chessboardEl.innerHTML = ''; // Clear previous board
-    const boardFragment = document.createDocumentFragment();
+    chessboardEl.innerHTML = ''; // Vider l'ancien plateau
+    const boardFragment = document.createDocumentFragment(); // Pour la performance
+
     let boardData;
     try {
-        boardData = learnGame.board();
+        boardData = learnGame.board(); // Récupère l'état 2D du plateau depuis chess.js
     } catch (e) {
-        console.error("Error getting board data from learnGame:", e);
+        console.error("Error getting board data from learnGame instance:", e);
+        chessboardEl.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">Erreur interne du jeu</div>`;
         return;
     }
 
-    // Vider les highlights précédents au cas où
-    highlightedSquares.piece = [];
-    highlightedSquares.target = [];
-    highlightedSquares.allowed = [];
+    // Récupérer les highlights de la leçon courante (important de le faire ici avant la boucle)
     const currentLesson = lessons[currentLessonIndex];
-    if (currentLesson && currentLesson.highlightSquares) {
-        highlightedSquares = {
-            piece: currentLesson.highlightSquares.piece || [],
-            target: currentLesson.highlightSquares.target || [],
-            allowed: currentLesson.highlightSquares.allowed || [], // Cases où l'on peut aller
-        };
-    }
+    let currentHighlights = { piece: [], target: [], allowed: [] }; // Default empty
+     if (currentLesson && currentLesson.highlightSquares && (lessonState === 'waiting' || lessonState === 'guided')) { // N'applique les highlights de leçon que si elle n'est pas complétée ou en mode guidé
+         currentHighlights = {
+             piece: currentLesson.highlightSquares.piece || [],
+             target: currentLesson.highlightSquares.target || [],
+             allowed: currentLesson.highlightSquares.allowed || [],
+         };
+     }
 
+    const isBoardFlipped = false; // TODO: Ajouter logique si on veut retourner le plateau pour les noirs
 
-    for (let rowIndex = 0; rowIndex < 8; rowIndex++) {
-        for (let colIndex = 0; colIndex < 8; colIndex++) {
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const rowIndex = isBoardFlipped ? 7 - r : r;
+            const colIndex = isBoardFlipped ? 7 - c : c;
+
             const square = document.createElement('div');
             square.classList.add('square');
+            // Couleur de la case
             square.classList.add((rowIndex + colIndex) % 2 === 0 ? 'light' : 'dark');
-            square.dataset.row = rowIndex;
+            // Stocker les coordonnées pour référence
+            square.dataset.row = rowIndex; // Stocke la vraie coordonnée (0-7)
             square.dataset.col = colIndex;
-            const alg = files[colIndex] + (8 - rowIndex);
+            const alg = files[colIndex] + (8 - rowIndex); // Notation algébrique (ex: e4)
 
-            const pieceInfo = boardData[rowIndex]?.[colIndex];
+            // --- Ajout de la Pièce ---
+            const pieceInfo = boardData[rowIndex]?.[colIndex]; // Peut être null
             if (pieceInfo) {
-                // --- Piece Rendering ---
-                const myPieceFormat = pieceInfo.color === 'w' ? pieceInfo.type.toUpperCase() : pieceInfo.type.toLowerCase();
-                if (pieceRenderMode === 'ascii' && pieces && pieces[myPieceFormat]) {
-                    const pieceElement = document.createElement('span');
-                    pieceElement.className = 'piece';
-                    pieceElement.textContent = pieces[myPieceFormat];
+                const pieceElement = document.createElement('div'); // Utiliser div pour contenir img ou texte
+                 pieceElement.className = 'piece'; // Classe pour le style de base
+
+                if (pieceRenderMode === 'ascii') {
+                    const pieceSymbol = pieces[pieceInfo.color === 'w' ? pieceInfo.type.toUpperCase() : pieceInfo.type.toLowerCase()];
+                    pieceElement.textContent = pieceSymbol || '?';
                     pieceElement.classList.add(pieceInfo.color === 'w' ? 'white-piece' : 'black-piece');
-                    square.appendChild(pieceElement);
-                } else { // png mode
+                } else { // Mode PNG (par défaut)
                     const img = document.createElement('img');
                     const colorPrefix = pieceInfo.color === 'w' ? 'w' : 'b';
-                    const pieceCode = pieceInfo.type;
-                    const filename = `pieces/${colorPrefix}${pieceCode}.png`;
+                    const pieceCode = pieceInfo.type.toLowerCase(); // ex: p, n, b, r, q, k
+                    const filename = `pieces/${colorPrefix}${pieceCode}.png`; // ex: wp.png, bn.png
                     img.src = filename;
-                    img.alt = myPieceFormat;
-                    img.classList.add("piece");
-                    img.draggable = false;
-                    img.onerror = () => { img.style.display = 'none'; };
-                    square.appendChild(img);
+                    img.alt = pieceInfo.color === 'w' ? pieceInfo.type.toUpperCase() : pieceInfo.type.toLowerCase(); // ex: P, n
+                    img.draggable = false; // Empêcher le drag natif
+                     img.onerror = () => { // En cas d'image manquante
+                         console.warn(`Image not found: ${filename}`);
+                         img.alt = `(${img.alt})`; // Montrer le alt text
+                         // Remplacer par ASCII si l'image manque?
+                          const pieceSymbol = pieces[img.alt];
+                          img.remove(); // Retire l'image cassée
+                          pieceElement.textContent = pieceSymbol || '?';
+                           pieceElement.classList.add(pieceInfo.color === 'w' ? 'white-piece' : 'black-piece');
+                     };
+                     pieceElement.appendChild(img);
+                }
+                 square.appendChild(pieceElement);
+            }
+
+            // --- Application des Highlights ---
+
+            // 1. Highlights spécifiques à la leçon (uniquement si leçon en cours)
+            if (lessonState !== 'completed' && lessonState !== 'ended') {
+                if (currentHighlights.piece.includes(alg)) {
+                    square.classList.add('highlight-lesson-piece');
+                }
+                if (currentHighlights.target.includes(alg)) {
+                    square.classList.add('highlight-lesson-target');
+                }
+                if (currentHighlights.allowed.includes(alg)) {
+                    // Ne pas ajouter 'highlight-lesson-allowed' directement si on veut utiliser
+                    // les points/cercles standards pour les coups permis.
+                    // On les ajoutera via highlightMoves_Learn si la pièce est sélectionnée.
+                    // Sinon, si on veut un fond différent:
+                    // square.classList.add('highlight-lesson-allowed');
                 }
             }
 
-            // --- Lesson Highlighting ---
-            if (highlightedSquares.piece.includes(alg)) {
-                square.classList.add('highlight-lesson-piece');
-            }
-            if (highlightedSquares.target.includes(alg)) {
-                square.classList.add('highlight-lesson-target');
-            }
-            if (highlightedSquares.allowed.includes(alg)) {
-                square.classList.add('highlight-lesson-allowed');
-            }
-
-            // --- Standard Highlighting ---
+            // 2. Highlight du dernier coup joué
             if (lastMoveHighlight && (alg === lastMoveHighlight.from || alg === lastMoveHighlight.to)) {
                 square.classList.add('last-move');
             }
+
+            // 3. Highlight de la case sélectionnée
             if (selectedSquareAlg === alg) {
                 square.classList.add('selected');
             }
 
-            // Add click listener only if lesson is interactive and not completed
-            if (currentLesson && currentLesson.interactive && lessonState !== 'completed') {
+            // 4. Highlight du roi en échec (si applicable)
+             if (learnGame.in_check()) {
+                 const kingColor = learnGame.turn(); // Roi en échec est celui dont c'est le tour
+                 const kingSquare = findKingSquare(kingColor);
+                 if (alg === kingSquare) {
+                     square.classList.add('in-check');
+                 }
+             }
+
+
+            // Ajouter l'écouteur de clic (uniquement si leçon interactive ou mode guidé et partie non finie)
+            if ((currentLesson?.interactive && lessonState !== 'completed' && lessonState !== 'error') || (isGuidedMode && lessonState !== 'ended')) {
                 square.addEventListener('click', handleSquareClick_Learn);
                 square.style.cursor = 'pointer';
             } else {
                 square.style.cursor = 'default';
             }
 
-
             boardFragment.appendChild(square);
         }
     }
     chessboardEl.appendChild(boardFragment);
 
-    // Re-apply legal move highlights if a piece is selected
+    // Ré-appliquer les highlights de coups possibles si une pièce est sélectionnée
     if (selectedSquareAlg) {
-        const lesson = lessons[currentLessonIndex];
-        let movesToShow = learnGame.moves({ square: selectedSquareAlg, verbose: true });
-        // Filter moves based on lesson constraints
-        if (lesson.allowedMoves) {
-            movesToShow = movesToShow.filter(m => lesson.allowedMoves.includes(m.san));
-        } else if (lesson.validateMove) {
-            movesToShow = movesToShow.filter(m => lesson.validateMove(m));
-        } else if (highlightedSquares.target.length > 0) {
-            // If specific targets highlighted, only show moves to those targets
-            movesToShow = movesToShow.filter(m => highlightedSquares.target.includes(m.to));
-        }
-        highlightMoves_Learn(movesToShow);
+        const movesToShow = learnGame.moves({ square: selectedSquareAlg, verbose: true });
+         // Optionnel : Filtrer les coups montrés selon la leçon
+         let filteredMoves = movesToShow;
+          if (currentLesson?.interactive && lessonState !== 'completed') {
+              // Si la leçon spécifie allowedMoves, ne montre que ceux là
+             if (currentLesson.allowedMoves) {
+                 filteredMoves = movesToShow.filter(m => currentLesson.allowedMoves.includes(m.san));
+             }
+             // Si la leçon spécifie des target squares, ne montre que les coups vers ces cases
+             else if (currentHighlights.target.length > 0) {
+                  filteredMoves = movesToShow.filter(m => currentHighlights.target.includes(m.to));
+             }
+              // Si la leçon spécifie des allowed squares, montre les coups vers ces cases
+              // (Note: 'allowed' dans highlightSquares est un peu ambigu, s'il signifie juste 'cases où on peut aller'
+              // alors ce filtrage est pertinent)
+              else if (currentHighlights.allowed.length > 0) {
+                  filteredMoves = movesToShow.filter(m => currentHighlights.allowed.includes(m.to));
+              }
+          }
+        highlightMoves_Learn(filteredMoves);
     }
 }
 
+
+// Met en surbrillance les cases de destination possibles pour une pièce sélectionnée
 function highlightMoves_Learn(moves) {
-    // Clear previous move/capture highlights (keep lesson highlights)
-    chessboardEl.querySelectorAll('.square.highlight, .square.capture').forEach(sq => {
-        sq.classList.remove('highlight', 'capture');
+    if (!chessboardEl) return;
+    // Effacer les highlights de coups précédents (laisse les highlights de leçon/selection/lastmove)
+    chessboardEl.querySelectorAll('.square.highlight, .square.capture, .square.en-passant-target').forEach(sq => {
+        sq.classList.remove('highlight', 'capture', 'en-passant-target');
     });
 
     moves.forEach(move => {
@@ -607,21 +789,43 @@ function highlightMoves_Learn(moves) {
         if (!coord) return;
         const square = chessboardEl.querySelector(`.square[data-row="${coord[0]}"][data-col="${coord[1]}"]`);
         if (square) {
-            // Utiliser les styles standard 'highlight' et 'capture'
+            // Utiliser les classes CSS standards 'highlight' (pour coup normal) et 'capture'
             square.classList.add(move.flags.includes('c') ? 'capture' : 'highlight');
+             // Style spécial pour la cible en passant?
+             if (move.flags.includes('e')) {
+                 square.classList.add('en-passant-target'); // Ajoute classe spécifique si besoin
+             }
         }
     });
 }
 
-
 // --- Helpers ---
+// Convertit la notation algébrique (ex: 'e4') en coordonnées [row, col] (ex: [4, 4])
 function algToCoord(alg) {
     if (!alg || alg.length < 2) return null;
     const col = files.indexOf(alg[0]);
     const row = 8 - parseInt(alg[1]);
-    if (col === -1 || isNaN(row) || row < 0 || row > 7) return null;
+    if (col === -1 || isNaN(row) || row < 0 || row > 7) {
+        console.warn(`Invalid algebraic notation: ${alg}`);
+        return null;
+    }
     return [row, col];
 }
 
+// Trouve la case du roi d'une couleur donnée
+function findKingSquare(color) { // color = 'w' or 'b'
+     const kingType = color === 'w' ? 'k' : 'k'; // Cherche 'k' dans tous les cas
+     const board = learnGame.board();
+     for (let r = 0; r < 8; r++) {
+         for (let c = 0; c < 8; c++) {
+             const piece = board[r][c];
+             if (piece && piece.type === 'k' && piece.color === color) {
+                 return files[c] + (8 - r); // Retourne la notation alg
+             }
+         }
+     }
+     return null; // Roi non trouvé (ne devrait pas arriver dans une partie normale)
+ }
 
-console.log("Learn page script loaded.");
+
+console.log("Learn page script (learn.js) loaded and executed.");

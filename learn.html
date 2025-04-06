@@ -7,17 +7,97 @@
     <title>Apprendre les Échecs - DFWS Chess</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Utiliser le même CSS que le jeu principal -->
-    <link rel="stylesheet" href="styles-v2.css">
+    <!-- Optionnel: Si vous avez un styles-v2.css qui définit --primary-color etc. et styles de base -->
+    <!-- <link rel="stylesheet" href="styles-v2.css"> -->
     <style>
-        /* Styles spécifiques pour la page d'apprentissage */
+        /* Définitions de variables CSS de base (similaires à ce qui pourrait être dans styles-v2.css) */
+        :root {
+            --primary-color: #4a66a0; /* Bleu moyen */
+            --secondary-color: #607d8b; /* Gris bleu */
+            --surface-color: #ffffff; /* Fond des boîtes */
+            --text-color: #212121; /* Texte principal */
+            --background-color: #f4f4f4; /* Fond général */
+            --border-radius: 6px;
+            --highlight-color: rgba(255, 255, 0, 0.4); /* Jaune pour sélection */
+            --check-color: rgba(255, 0, 0, 0.5); /* Rouge pour échec */
+            --last-move-color: rgba(0, 0, 0, 0.15); /* Gris pour dernier coup */
+            --move-indicator-color: rgba(20, 20, 20, 0.25); /* Indicateur de coup possible */
+            --capture-indicator-color: rgba(255, 0, 0, 0.35); /* Indicateur de capture */
+        }
+
+        /* Thème sombre optionnel (basculé via classe 'dark-theme' sur body) */
+        body.dark-theme {
+            --primary-color: #8aacc8;
+            --secondary-color: #90a4ae;
+            --surface-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --background-color: #1f2b38;
+            --highlight-color: rgba(255, 255, 100, 0.4);
+            --check-color: rgba(255, 80, 80, 0.5);
+            --last-move-color: rgba(255, 255, 255, 0.1);
+            --move-indicator-color: rgba(200, 200, 200, 0.25);
+            --capture-indicator-color: rgba(255, 80, 80, 0.35);
+        }
+
+        /* Styles de base */
         body {
+            font-family: 'Roboto Mono', monospace;
+            margin: 0;
             padding: 15px;
             display: flex;
             justify-content: center;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
         }
 
-        .learn-container {
+        .btn {
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none; /* Pour les liens stylés en bouton */
+            display: inline-flex; /* Pour aligner icônes et texte */
+            align-items: center;
+            gap: 5px;
+        }
+
+        .primary-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background-color: #3a5080; /* Slightly darker */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .secondary-btn {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .secondary-btn:hover {
+             background-color: #546e7a; /* Slightly darker */
+             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn:disabled {
+            background-color: #bdbdbd;
+            color: #757575;
+            cursor: not-allowed;
+            opacity: 0.7;
+             box-shadow: none;
+        }
+
+        i.fas { /* Espacement pour les icônes dans les boutons/titres */
+            margin-right: 5px;
+        }
+
+
+        /* Styles spécifiques pour la page d'apprentissage */
+         .learn-container {
             max-width: 1000px;
             width: 100%;
             margin: auto;
@@ -34,13 +114,14 @@
         .learn-header h1 {
             font-size: 1.6em;
             margin: 0 10px 0 0;
+            color: var(--primary-color);
+             display: flex;
+             align-items: center;
         }
 
         .learn-header a {
             flex-shrink: 0;
         }
-
-        /* Empêche le bouton de rétrécir */
 
         .learn-layout {
             display: grid;
@@ -49,75 +130,50 @@
             gap: 20px;
         }
 
-        .feedback.info {
-            background-color: #e3f2fd;
-            color: #1976d2;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-
-        .feedback.success {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .feedback.error {
-            background-color: #ffebee;
-            color: #c62828;
-        }
-
-        .feedback {
-            transition: opacity 0.3s ease;
-            opacity: 0;
-        }
-
-        .feedback.visible {
-            opacity: 1;
-        }
-
         #lesson-feedback {
             transition: opacity 0.3s ease;
             padding: 10px;
             border-radius: 4px;
             margin: 10px 0;
             font-weight: bold;
-            opacity: 0;
+            opacity: 0; /* Caché initialement */
+            min-height: 1.5em; /* Garde l'espace */
+            text-align: center;
+            visibility: hidden; /* Cache complètement */
+            transition: visibility 0s linear 0.3s, opacity 0.3s ease; /* Transition en douceur */
         }
 
         #lesson-feedback.visible {
             opacity: 1;
+            visibility: visible; /* Rendre visible */
+            transition-delay: 0s;
         }
 
         #lesson-feedback.success {
-            background-color: rgba(76, 175, 80, 0.2);
+            background-color: rgba(76, 175, 80, 0.2); /* Vert */
             color: #4CAF50;
         }
 
         #lesson-feedback.error {
-            background-color: rgba(244, 67, 54, 0.15);
+            background-color: rgba(244, 67, 54, 0.15); /* Rouge */
             color: #f44336;
         }
 
         #lesson-feedback.info {
-            background-color: rgba(33, 150, 243, 0.15);
+            background-color: rgba(33, 150, 243, 0.15); /* Bleu */
             color: #2196F3;
         }
 
         /* Mise en page pour écrans plus larges */
         @media (min-width: 800px) {
-            .learn-layout {
-                grid-template-columns: 1fr auto;
-                /* Instructions | Échiquier */
-            }
 
             .learn-board-area {
-                order: 2;
+                order: 1;
             }
 
             /* Met le plateau à droite */
             .learn-lesson-area {
-                order: 1;
+                order: 2;
             }
 
             /* Met les leçons à gauche */
@@ -156,7 +212,7 @@
             /* Fond léger primaire */
             border-left: 4px solid var(--primary-color);
             border-radius: 4px;
-            min-height: 1.5em;
+            min-height: 1.5em; /* Ensure space even when empty */
         }
 
         #lesson-explanation {
@@ -164,38 +220,8 @@
             font-size: 1em;
             line-height: 1.6;
             margin-bottom: 15px;
-            min-height: 4em;
+            min-height: 4em; /* Ensure space even when short */
         }
-
-        #lesson-feedback {
-            /* Feedback après action */
-            min-height: 1.5em;
-            font-weight: bold;
-            text-align: center;
-            padding: 8px;
-            border-radius: 4px;
-            visibility: hidden;
-            /* Caché par défaut */
-            opacity: 0;
-            transition: visibility 0s linear 0.3s, opacity 0.3s ease;
-        }
-
-        #lesson-feedback.visible {
-            visibility: visible;
-            opacity: 1;
-            transition-delay: 0s;
-        }
-
-        #lesson-feedback.success {
-            background-color: rgba(76, 175, 80, 0.2);
-            color: #4CAF50;
-        }
-
-        #lesson-feedback.error {
-            background-color: rgba(244, 67, 54, 0.15);
-            color: #f44336;
-        }
-
 
         .lesson-controls {
             display: flex;
@@ -240,109 +266,193 @@
         }
 
         #chessboard {
-            /* Le style vient de styles-v2.css */
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
-            /* Ombre sur l'échiquier lui-même */
-            border-radius: 8px;
-        }
-
-        /* Highlighting pour les leçons */
-        .square.highlight-lesson-piece::after {
-            /* Pièce à bouger */
-            content: '';
-            position: absolute;
-            inset: 3px;
-            border: 3px solid rgba(255, 165, 0, 0.8);
-            /* Orange solide */
-            border-radius: 50%;
-            /* Cercle */
-            pointer-events: none;
-            animation: pulse-suggest 1.5s infinite ease-in-out;
-            /* Réutiliser l'animation */
-        }
-
-        .square.highlight-lesson-target::after {
-            /* Case cible */
-            content: '';
-            position: absolute;
-            width: 40%;
-            /* Plus petit */
-            height: 40%;
-            background-color: rgba(40, 180, 40, 0.6);
-            /* Vert semi-transparent */
-            border-radius: 50%;
-            top: 30%;
-            left: 30%;
-            pointer-events: none;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .square.highlight-lesson-allowed {
-            /* Case de déplacement permise (moins visible) */
-            background-color: rgba(74, 102, 160, 0.15);
-            /* Légèrement bleuté */
-        }
-
-        #chessboard {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
-            width: 480px;
-            /* ou une autre largeur appropriée */
-            height: 480px;
-            /* pour conserver un ratio carré */
+            width: 100%; /* Prend la largeur du wrapper */
+            aspect-ratio: 1 / 1; /* Maintient le ratio carré */
+            max-width: 480px; /* Limite la taille max */
+            max-height: 480px;
             border: 2px solid var(--secondary-color);
             border-radius: 8px;
+            overflow: hidden; /* Cache les dépassements potentiels */
+             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25); /* Ombre sur l'échiquier */
         }
 
         .square {
             position: relative;
             width: 100%;
             height: 100%;
+            display: flex; /* Center piece */
+            justify-content: center;
+            align-items: center;
+            font-size: 38px; /* Taille de base pour les pièces ASCII */
         }
 
-        /* Exemple de coloration pour les cases */
-        .light {
-            background-color: #f0d9b5;
+        /* Couleurs des cases */
+        .light { background-color: #f0d9b5; }
+        .dark { background-color: #b58863; }
+        body.dark-theme .light { background-color: #aaa; }
+        body.dark-theme .dark { background-color: #666; }
+
+        /* Pièces */
+        .piece {
+            position: absolute; /* Permet un centrage parfait */
+            width: 85%; /* Taille de l'image/texte */
+            height: 85%;
+            object-fit: contain; /* Pour les images */
+            pointer-events: none; /* Ne capture pas les clics */
+             -webkit-user-select: none; /* Prevent text selection */
+             -moz-user-select: none;
+             -ms-user-select: none;
+             user-select: none;
+             line-height: 1; /* Ajuste la hauteur pour l'ASCII */
+             text-align: center;
+        }
+        .piece img { width: 100%; height: 100%; }
+
+        /* Couleurs pièces ASCII */
+        .white-piece { color: #fff; text-shadow: 0 0 2px black; }
+        .black-piece { color: #111; text-shadow: 0 0 2px rgba(255,255,255,0.5); }
+        body.dark-theme .white-piece { color: #eee; text-shadow: 0 0 2px black;}
+        body.dark-theme .black-piece { color: #333; text-shadow: 0 0 2px rgba(200,200,200,0.5);}
+
+        /* --- Styles de Highlighting --- */
+
+        /* Pour visualiser la sélection */
+        .square.selected {
+            outline: 3px solid var(--highlight-color); /* Utilise variable */
+            outline-offset: -3px; /* Vers l'intérieur */
+        }
+        /* Pour visualiser le dernier coup */
+        .square.last-move {
+            background-color: var(--last-move-color); /* Utilise variable */
+        }
+         /* Pour indiquer un roi en échec */
+         .square.in-check {
+             background-color: var(--check-color); /* Utilise variable */
+             /* Animation pulse possible */
+             /* animation: pulse-check 1s infinite alternate; */
+         }
+        /* @keyframes pulse-check { from { background-color: var(--check-color); } to { background-color: rgba(255, 0, 0, 0.8); } } */
+
+
+        /* Highlighting pour les coups possibles (Défini ici car manquant) */
+        .square.highlight::after { /* Coup normal possible */
+            content: '';
+            position: absolute;
+            width: 30%;
+            height: 30%;
+            background-color: var(--move-indicator-color);
+            border-radius: 50%;
+            top: 35%; left: 35%; /* Centré */
+            pointer-events: none;
+        }
+        .square.capture::before { /* Coup de capture possible */
+            content: '';
+            position: absolute;
+            inset: 5px; /* Ajuster l'épaisseur */
+            border: 4px solid transparent; /* Bordure pour l'effet */
+             border-radius: 50%; /* Cercle extérieur */
+            pointer-events: none;
+             background: radial-gradient(circle, transparent 60%, var(--capture-indicator-color) 62%);
+             background-clip: content-box; /* Important pour l'effet anneau */
+        }
+         /* En passant target highlight (optional specific style) */
+         .square.en-passant-target::before {
+             background: radial-gradient(circle, transparent 55%, rgba(255, 100, 0, 0.4) 57%); /* Orangeâtre */
+         }
+
+
+        /* Highlighting spécifique aux leçons */
+        @keyframes pulse-suggest {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
         }
 
-        .dark {
-            background-color: #b58863;
+        .square.highlight-lesson-piece::after {
+            /* Pièce à bouger */
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border: 3px solid rgba(255, 165, 0, 0.9);
+            /* Orange plus visible */
+            border-radius: 50%;
+            /* Cercle */
+            pointer-events: none;
+            animation: pulse-suggest 1.5s infinite ease-in-out;
+            /* Réutiliser l'animation */
+            box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
         }
 
-        /* Pour visualiser la sélection / dernier coup */
-        .selected {
-            outline: 3px solid rgba(255, 0, 0, 0.7);
+        .square.highlight-lesson-target::after {
+            /* Case cible principale */
+            content: '';
+            position: absolute;
+            width: 40%;
+            /* Plus petit */
+            height: 40%;
+            background-color: rgba(40, 180, 40, 0.7);
+            /* Vert semi-transparent plus visible */
+            border-radius: 50%;
+            top: 30%;
+            left: 30%;
+            pointer-events: none;
+            border: 2px solid rgba(255, 255, 255, 0.7);
         }
 
-        .last-move {
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        .square.highlight-lesson-allowed {
+            /* Case de déplacement permise (moins visible que target) */
+            background-color: rgba(74, 102, 160, 0.15);
+            /* Légèrement bleuté (ou utiliser highlight::after?) */
+             /* Alternative: utiliser le même style que highlight mais avec une couleur spécifique */
+        }
+        .square.highlight-lesson-allowed::after { /* Utiliser le même style que .highlight */
+            content: '';
+            position: absolute;
+            width: 30%;
+            height: 30%;
+            background-color: rgba(74, 102, 160, 0.4); /* Bleu pour leçon permise */
+            border-radius: 50%;
+            top: 35%; left: 35%;
+            pointer-events: none;
         }
 
 
-        /* Responsive */
+        /* Responsive adjustments */
         @media (max-width: 800px) {
             .learn-board-area {
-                order: -1;
+                order: -1; /* Met le plateau en premier */
                 margin-bottom: 15px;
             }
 
             .board-wrapper {
-                max-width: 95%;
+                max-width: 95%; /* Un peu moins que la largeur complète */
                 margin: auto;
             }
 
-            /* Centrer sur mobile */
             .learn-header {
                 text-align: center;
                 justify-content: center;
+                gap: 10px; /* Espace entre titre et bouton */
+            }
+            .learn-header h1 {
+                font-size: 1.4em; /* légèrement plus petit sur mobile */
+                margin: 0;
             }
 
             .lesson-controls {
-                justify-content: center;
+                justify-content: center; /* Centre les boutons */
             }
-
-            /* Centrer les contrôles */
         }
+        @media (max-width: 400px) {
+             body { padding: 10px; }
+             .learn-header h1 { font-size: 1.2em; }
+             .lesson-content-box { padding: 15px; }
+             .lesson-controls { flex-direction: column; } /* Empile les boutons */
+             .square { font-size: 30px; } /* Réduire taille ASCII */
+        }
+
     </style>
 </head>
 
@@ -359,18 +469,18 @@
             <div class="learn-lesson-area">
                 <div class="lesson-content-box">
                     <h2 id="lesson-title">Chargement...</h2>
-                    <div id="lesson-objective"></div>
-                    <div id="lesson-explanation"></div>
-                    <div id="lesson-feedback">Feedback ici</div>
+                    <div id="lesson-objective">Chargement de l'objectif...</div>
+                    <div id="lesson-explanation">Chargement des explications...</div>
+                    <div id="lesson-feedback"></div> <!-- Feedback sera affiché ici -->
                 </div>
 
                 <div class="lesson-controls">
                     <button id="reset-exercise" class="btn secondary-btn" title="Réinitialiser cet exercice"><i
                             class="fas fa-undo"></i> Réessayer</button>
                     <div id="lesson-navigation">
-                        <button id="prev-lesson" class="btn secondary-btn"><i class="fas fa-arrow-left"></i>
+                        <button id="prev-lesson" class="btn secondary-btn" disabled><i class="fas fa-arrow-left"></i>
                             Précédent</button>
-                        <button id="next-lesson" class="btn primary-btn">Suivant <i
+                        <button id="next-lesson" class="btn primary-btn" disabled>Suivant <i
                                 class="fas fa-arrow-right"></i></button>
                     </div>
                 </div>
@@ -380,7 +490,7 @@
                 <div class="board-wrapper">
                     <div id="chessboard">
                         <!-- Plateau généré par JS -->
-                        <div style="padding: 20px; color: #aaa; text-align: center;">Chargement du plateau...</div>
+                        <div style="padding: 20px; color: #aaa; text-align: center; grid-column: span 8;">Chargement du plateau...</div>
                     </div>
                     <!-- SVG Overlay peut être ajouté ici si besoin de flèches plus tard -->
                 </div>
@@ -390,10 +500,13 @@
     </div> <!-- Fin learn-container -->
 
     <!-- Scripts -->
-    <script type="module" src="chess.js"></script>
+    <script type="module" src="./chess.js"></script> <!-- Assurez-vous que le chemin est correct -->
     <script type="module">
+        // Importe et expose globalement pour que learn.js puisse y accéder si besoin
+        // (Bien que l'import direct dans learn.js soit préférable et utilisé)
         import { Chess } from './chess.js';
-        window.Chess = Chess; // Exposer globalement
+        window.Chess = Chess;
+        console.log("Chess object loaded and exposed globally.");
     </script>
     <script src="learn.js" type="module"></script>
 

@@ -415,6 +415,48 @@ h1 {
     animation: gradient-shift 2s linear infinite;
 }
 
+/* Hide puzzle controls by default */
+#hint-button, #next-puzzle-button, #exit-puzzle-button {
+    display: none;
+}
+
+/* Show puzzle controls when puzzle mode is active */
+body.puzzle-mode-active .game-controls #hint-button,
+body.puzzle-mode-active .game-controls #next-puzzle-button,
+body.puzzle-mode-active .game-controls #exit-puzzle-button {
+    display: flex; /* Or inline-flex, block, etc. depending on layout */
+}
+
+/* Hide standard game controls during puzzle mode */
+body.puzzle-mode-active .game-controls #undo-button,
+body.puzzle-mode-active .game-controls #analyze-button,
+body.puzzle-mode-active .game-controls #export-button,
+body.puzzle-mode-active .game-controls #resign-button {
+    display: none;
+}
+
+/* Style for hint highlight */
+.square.hint-from::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 3px solid rgba(255, 165, 0, 0.8); /* Orange border */
+    border-radius: 50%; /* Circle */
+    pointer-events: none;
+    z-index: 2;
+    animation: pulse-suggest 1.5s infinite ease-in-out; /* Reuse pulse animation */
+}
+ .square.hint-to::after {
+    content: '';
+    position: absolute;
+    width: 30%; height: 30%; top: 35%; left: 35%; /* Small circle like normal moves */
+    border-radius: 50%;
+    background-color: rgba(255, 165, 0, 0.7); /* Orange dot */
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.8;
+ }
+
 @keyframes gradient-shift {
     0% {
         background-position: 100% 0;
