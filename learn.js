@@ -171,7 +171,7 @@ function defineLessons() {
             explanation: "La Dame est la pièce la plus puissante. Elle combine les déplacements de la Tour ET du Fou : elle peut se déplacer horizontalement, verticalement ou en diagonale d'autant de cases libres qu'elle le souhaite.",
             interactive: true,
             // FEN après 1.d4 e5 - Ouvre la diagonale pour la Dame
-             setupFen: 'rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2',
+             setupFen: 'rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP11PPP/RNBQKBNR w KQkq - 0 2',
             highlightSquares: { piece: ['d1'], target: ['h5'] },
             // Remplacé validateMove par allowedMoves pour la cohérence
             allowedMoves: ['Qh5'],
