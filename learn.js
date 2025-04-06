@@ -171,7 +171,7 @@ function defineLessons() {
             explanation: "La Dame est la pièce la plus puissante. Elle combine les déplacements de la Tour ET du Fou : elle peut se déplacer horizontalement, verticalement ou en diagonale d'autant de cases libres qu'elle le souhaite.",
             interactive: true,
             // FEN après 1.d4 e5 - Ouvre la diagonale pour la Dame
-             setupFen: 'rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP11PPP/RNBQKBNR w KQkq - 0 2',
+             setupFen: 'rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP2PPP/RNBQKBNR w KQkq - 0 2',
             highlightSquares: { piece: ['d1'], target: ['h5'] },
             // Remplacé validateMove par allowedMoves pour la cohérence
             allowedMoves: ['Qh5'],
@@ -184,7 +184,7 @@ function defineLessons() {
             explanation: "Le Roi est la pièce la plus importante, mais il est lent. Il peut se déplacer d'une seule case dans n'importe quelle direction (horizontale, verticale ou diagonale). Il ne peut jamais se déplacer sur une case attaquée par une pièce adverse.",
             interactive: true,
              // FEN modifiée pour que le roi ait quelques coups, mais pas trop. e.g., après 1.e4
-            setupFen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1',
+            setupFen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PP3PPP/RNB1K1NR w KQkq - 0 1',
             // Highlight uniquement les cases légales (f1, e2). d1 est bloqué, d2 est bloqué
             highlightSquares: { piece: ['e1'], target: ['f1', 'e2'] },
             allowedMoves: ['Kf1'], // Objectif simple
