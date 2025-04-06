@@ -208,9 +208,7 @@ function defineLessons() {
             explanation: "La prise 'en passant' est une règle spéciale pour les pions. Si un pion adverse avance de deux cases depuis sa position initiale et atterrit juste à côté de votre pion, votre pion peut le capturer comme s'il n'avait avancé que d'une case. Cette capture doit être effectuée immédiatement au coup suivant.",
             interactive: true,
              // FEN où le pion blanc en d5 peut prendre le pion noir en e5 (qui vient de jouer e7-e5) en passant sur e6.
-            setupFen: 'rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3', // Après 1.d4 d5 2.e4 e5 (le coup qui vient d'être joué est e5, donc e6 est la case 'en passant') -> Il faut une FEN correcte pour ça.
             // FEN correcte pour une prise en passant pour Blanc sur e6 :
-            setupFen: 'rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3', // Exemple après 1.e4 f5 2.e5 d5? 3.f4... Non, plus simple:
             // Position où Blanc a un pion en d5, Noir vient de jouer ...e7-e5. Blanc peut jouer dxe6.
             setupFen: '4k3/8/8/3pP3/8/8/8/4K3 w - e6 0 1', // Pion blanc d5, pion noir vient de jouer e7-e5 -> 'en passant' possible sur e6.
             highlightSquares: { piece: ['d5'], target: ['e6'] }, // La capture se fait sur la case "traversée"
@@ -227,7 +225,7 @@ function defineLessons() {
             interactive: true,
             setupFen: '8/P7/k7/8/8/8/8/K7 w - - 0 1', // Pion prêt à promouvoir, rois présents pour éviter FEN invalide
             highlightSquares: { piece: ['a7'], target: ['a8'] },
-            allowedMoves: ['a8=Q'], // Promotion en Dame (Q = Queen)
+            allowedMoves: ['a8'], // Promotion en Dame (Q = Queen)
             showOnlyLegalMovesFor: 'a7',
              // validateMove est bien ici car il vérifie le flag 'p' (promotion) et le type de pièce
             validateMove: (m) => m.flags.includes('p') && m.promotion === 'q' && m.from === 'a7' && m.to === 'a8'
@@ -241,7 +239,7 @@ function defineLessons() {
             // Position simple : Dame blanche vs Roi noir seul.
             setupFen: '4k3/Q7/8/8/8/8/8/4K3 w - - 0 1', // Dame en a7, Roi noir en e8.
             highlightSquares: { piece: ['a7'], target: ['e7'] }, // Coup Qe7#
-            allowedMoves: ['Qe7#'], // Échec et mat (notation avec #)
+            allowedMoves: ['e7'], // Échec et mat (notation avec #)
             showOnlyLegalMovesFor: 'a7',
         },
         // 13: Pat
