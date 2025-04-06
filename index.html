@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFWS Chess</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles-v2.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-chess-knight"></i>
+                <h1>Jeu d'Échecs</h1>
+            </div>
+            <a href="learn.html" class="btn primary-btn" style="margin-top: 20px;">
+                <i class="fas fa-graduation-cap"></i> Apprendre à Jouer
+            </a>
+        </header>
+
+        <div class="controls-container">
+            <button id="theme-toggle" class="control-button" title="Basculer Thème">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button id="sound-toggle" class="control-button" title="Basculer Son" aria-label="Toggle sound">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <button id="piece-render-toggle" class="control-button" title="Basculer Rendu Pièces">
+                <i class="fas fa-chess-pawn"></i>
+            </button>
+            <button id="ai-delay-toggle" class="control-button" title="Basculer Délai IA">
+                <i class="fas fa-clock"></i> ON
+            </button>
+        </div>
+
+        <!-- Menu Principal -->
+        <div id="main-menu" class="menu-container">
+            <h2>Sélectionnez le mode de jeu</h2>
+            <div class="mode-options">
+                <button id="mode-ai" class="mode-button">
+                    <i class="fas fa-robot"></i>
+                    <span>Jouer contre l'IA</span>
+                </button>
+                <button id="mode-human" class="mode-button">
+                    <i class="fas fa-user-friends"></i>
+                    <span>Jouer contre un humain</span>
+                </button>
+                <button id="mode-ai-ai" class="mode-button">
+                    <i class="fas fa-robot"></i><i class="fas fa-robot" style="margin-left: -5px;"></i>
+                    <span>IA vs IA</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sélection Temps (pour Humain/IA) -->
+        <div id="time-selection" class="menu-container" style="display:none;">
+            <h2>Choisissez le contrôle du temps</h2>
+            <div class="time-options">
+                <button data-time="blitz" class="time-button">
+                    <i class="fas fa-bolt"></i>
+                    <span>Blitz (3 min)</span>
+                </button>
+                <button data-time="standard" class="time-button">
+                    <i class="fas fa-hourglass-half"></i>
+                    <span>Standard (10 min)</span>
+                </button>
+                <button data-time="unlimited" class="time-button">
+                    <i class="fas fa-infinity"></i>
+                    <span>Illimité</span>
+                </button>
+            </div>
+            <button id="back-to-mode" class="btn secondary-btn" style="margin-top: 20px;"><i class="fas fa-arrow-left"></i> Retour Mode</button>
+        </div>
+
+        <!-- Sélection Difficulté IA vs IA -->
+        <div id="ai-vs-ai-difficulty-selection" class="menu-container" style="display:none;">
+            <h2>Configuration IA vs IA</h2>
+            <p style="margin-bottom: 15px; opacity: 0.8;">(Temps illimité par défaut)</p>
+            <div class="ai-difficulty-options">
+                <div class="ai-diff-group">
+                    <h3>IA Blanc</h3>
+                    <button data-difficulty="Learn" data-color="white" class="difficulty-button difficulty-learn"><span>Léo Apprenti (600)</span><div class="level-indicator"><div class="level-bar" style="width:5%"></div></div></button>
+                    <button data-difficulty="Noob" data-color="white" class="difficulty-button"><span>Jean Noob (800)</span><div class="level-indicator"><div class="level-bar" style="width:10%"></div></div></button>
+                    <button data-difficulty="Easy" data-color="white" class="difficulty-button"><span>Pierre Facile (1000)</span><div class="level-indicator"><div class="level-bar" style="width:25%"></div></div></button>
+                    <button data-difficulty="Regular" data-color="white" class="difficulty-button"><span>Marc Normal (1200)</span><div class="level-indicator"><div class="level-bar" style="width:40%"></div></div></button>
+                    <button data-difficulty="Hard" data-color="white" class="difficulty-button"><span>Luc Difficile (1400)</span><div class="level-indicator"><div class="level-bar" style="width:60%"></div></div></button>
+                    <button data-difficulty="Very Hard" data-color="white" class="difficulty-button"><span>Victor T. Difficile (1600)</span><div class="level-indicator"><div class="level-bar" style="width:75%"></div></div></button>
+                    <button data-difficulty="Super Hard" data-color="white" class="difficulty-button"><span>Sacha Expert (1800)</span><div class="level-indicator"><div class="level-bar" style="width:85%"></div></div></button>
+                    <button data-difficulty="Magnus Carlsen" data-color="white" class="difficulty-button"><span>M. Carlsen (2850)</span><div class="level-indicator"><div class="level-bar" style="width:95%"></div></div></button>
+                    <button data-difficulty="Unbeatable" data-color="white" class="difficulty-button"><span>Invinci Bill (3000)</span><div class="level-indicator"><div class="level-bar" style="width:100%"></div></div></button>
+                    <button data-difficulty="Adaptative" data-color="white" class="difficulty-button"><span>Adam Adaptatif (Var)</span><div class="level-indicator"><div class="level-bar adaptive"></div></div></button>
+                </div>
+                <div class="ai-diff-group">
+                    <h3>IA Noir</h3>
+                    <button data-difficulty="Learn" data-color="black" class="difficulty-button difficulty-learn"><span>Léo Apprenti (600)</span><div class="level-indicator"><div class="level-bar" style="width:5%"></div></div></button>
+                    <button data-difficulty="Noob" data-color="black" class="difficulty-button"><span>Jean Noob (800)</span><div class="level-indicator"><div class="level-bar" style="width:10%"></div></div></button>
+                    <button data-difficulty="Easy" data-color="black" class="difficulty-button"><span>Pierre Facile (1000)</span><div class="level-indicator"><div class="level-bar" style="width:25%"></div></div></button>
+                    <button data-difficulty="Regular" data-color="black" class="difficulty-button"><span>Marc Normal (1200)</span><div class="level-indicator"><div class="level-bar" style="width:40%"></div></div></button>
+                    <button data-difficulty="Hard" data-color="black" class="difficulty-button"><span>Luc Difficile (1400)</span><div class="level-indicator"><div class="level-bar" style="width:60%"></div></div></button>
+                    <button data-difficulty="Very Hard" data-color="black" class="difficulty-button"><span>Victor T. Difficile (1600)</span><div class="level-indicator"><div class="level-bar" style="width:75%"></div></div></button>
+                    <button data-difficulty="Super Hard" data-color="black" class="difficulty-button"><span>Sacha Expert (1800)</span><div class="level-indicator"><div class="level-bar" style="width:85%"></div></div></button>
+                    <button data-difficulty="Magnus Carlsen" data-color="black" class="difficulty-button"><span>M. Carlsen (2850)</span><div class="level-indicator"><div class="level-bar" style="width:95%"></div></div></button>
+                    <button data-difficulty="Unbeatable" data-color="black" class="difficulty-button"><span>Invinci Bill (3000)</span><div class="level-indicator"><div class="level-bar" style="width:100%"></div></div></button>
+                    <button data-difficulty="Adaptative" data-color="black" class="difficulty-button"><span>Adam Adaptatif (Var)</span><div class="level-indicator"><div class="level-bar adaptive"></div></div></button>
+                </div>
+            </div>
+            <button id="back-to-mode-aivsai" class="btn secondary-btn" style="margin-top: 20px;"><i class="fas fa-arrow-left"></i> Retour Mode</button>
+        </div>
+
+        <!-- Sélection Difficulté IA (après sélection temps) -->
+        <div id="difficulty-selection" class="menu-container" style="display:none;">
+            <h2>Niveau de l'IA</h2>
+            <div class="difficulty-options">
+                 <button data-difficulty="Learn" class="difficulty-button difficulty-learn"><span>Léo Apprenti (600)</span><div class="level-indicator"><div class="level-bar" style="width:5%"></div></div></button>
+                 <button data-difficulty="Noob" class="difficulty-button"><span>Jean Noob (800)</span><div class="level-indicator"><div class="level-bar" style="width:10%"></div></div></button>
+                 <button data-difficulty="Easy" class="difficulty-button"><span>Pierre Facile (1000)</span><div class="level-indicator"><div class="level-bar" style="width:25%"></div></div></button>
+                 <button data-difficulty="Regular" class="difficulty-button"><span>Marc Normal (1200)</span><div class="level-indicator"><div class="level-bar" style="width:40%"></div></div></button>
+                 <button data-difficulty="Hard" class="difficulty-button"><span>Luc Difficile (1400)</span><div class="level-indicator"><div class="level-bar" style="width:60%"></div></div></button>
+                 <button data-difficulty="Very Hard" class="difficulty-button"><span>Victor T. Difficile (1600)</span><div class="level-indicator"><div class="level-bar" style="width:75%"></div></div></button>
+                 <button data-difficulty="Super Hard" class="difficulty-button"><span>Sacha Expert (1800)</span><div class="level-indicator"><div class="level-bar" style="width:85%"></div></div></button>
+                 <button data-difficulty="Magnus Carlsen" class="difficulty-button"><span>M. Carlsen (2850)</span><div class="level-indicator"><div class="level-bar" style="width:95%"></div></div></button>
+                 <button data-difficulty="Unbeatable" class="difficulty-button"><span>Invinci Bill (3000)</span><div class="level-indicator"><div class="level-bar" style="width:100%"></div></div></button>
+                 <button data-difficulty="Adaptative" class="difficulty-button"><span>Adam Adaptatif (Var)</span><div class="level-indicator"><div class="level-bar adaptive"></div></div></button>
+            </div>
+             <button id="back-to-time" class="btn secondary-btn" style="margin-top: 20px;"><i class="fas fa-arrow-left"></i> Retour Temps</button>
+        </div>
+
+        <!-- Structure Principale du Jeu -->
+        <div class="game-layout" style="display: none;"> <!-- Initially hidden -->
+            <!-- Colonne Gauche (Joueur Noir) -->
+            <div class="left-sidebar">
+                 <div class="player-info player-info-black"> <!-- Classe ajoutée -->
+                     <div class="player-avatar"><i class="fas fa-user"></i></div>
+                     <div class="player-details">
+                         <span class="player-name">Joueur Noir</span>
+                         <span class="player-rating">1200</span> <!-- Rating Noir -->
+                     </div>
+                     <div id="black-time" class="time-display">--:--</div>
+                 </div>
+                 <div id="captured-white" class="captured-pieces"></div> <!-- Pièces Blanches capturées par Noir -->
+            </div>
+
+            <!-- Zone Centrale (Échiquier) -->
+            <div class="game-center">
+                <div class="board-wrapper">
+                    <div id="game-status" class="game-status">Statut : En attente</div>
+                    <div id="progress-bar" class="progress-container">
+                        <div id="white-progress" class="progress-bar white"></div>
+                        <div id="black-progress" class="progress-bar black"></div>
+                        <span id="score-advantage"></span>
+                    </div>
+                    <br>
+                    <div id="chessboard"></div>
+                </div>
+            </div>
+
+            <!-- Colonne Droite (Joueur Blanc, Contrôles, Historique) -->
+            <div class="right-sidebar">
+                <div class="player-info player-info-white">
+                    <div class="player-avatar"><i class="fas fa-user"></i></div>
+                    <div class="player-details">
+                        <span class="player-name">Joueur Blanc</span>
+                        <span class="player-rating">1200</span>
+                    </div>
+                    <div id="white-time" class="time-display">--:--</div>
+                    <!-- Bulle de Chat Blanc -->
+                    <div id="white-chat-bubble" class="chat-bubble chat-bubble-white" style="display: none;">...</div>
+                </div>
+                <div id="captured-black" class="captured-pieces"></div>
+
+                 <!-- Contrôles de Partie -->
+                 <div class="game-controls">
+                     <button id="undo-button" disabled title="Annuler le dernier coup"><i class="fas fa-undo"></i></button>
+                     <button id="analyze-button" disabled title="Analyser la partie (après fin)"><i class="fas fa-search"></i></button> <!-- Review button -->
+                     <button id="export-button" disabled title="Exporter PGN"><i class="fas fa-download"></i></button> <!-- Export PGN button -->
+                     <button id="resign-button" disabled title="Abandonner la partie"><i class="fas fa-flag"></i></button>
+                 </div>
+
+                 <!-- Historique des Coups -->
+                 <div class="moves-container">
+                     <h3>Historique</h3>
+                     <ol id="move-list"></ol>
+                 </div>
+            </div>
+        </div>
+
+        <!-- Statistiques (Optionnel, peut être intégré ailleurs) -->
+        <div id="statistics" class="stats-container" style="display: none;"> <!-- Initially hidden -->
+            <h2>Statistiques (Vs IA)</h2>
+            <div class="stats-grid">
+                <div class="stat-item"><span class="stat-label">Parties</span><span id="games-played" class="stat-value">0</span></div>
+                <div class="stat-item"><span class="stat-label">Victoires</span><span id="wins" class="stat-value">0</span></div>
+                <div class="stat-item"><span class="stat-label">Défaites</span><span id="losses" class="stat-value">0</span></div>
+                <div class="stat-item"><span class="stat-label">Nuls</span><span id="draws" class="stat-value">0</span></div>
+                <div class="stat-item" style="grid-column: 1 / -1;"><span class="stat-label">Mon Elo</span><span id="player-elo-stats" class="stat-value">1200</span></div>
+            </div>
+        </div>
+
+    </div> <!-- Fin app-container principal -->
+
+    <!-- Modales -->
+    <div id="promotion-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Choisissez une pièce</h3></div>
+            <div class="promotion-options"></div>
+            <!-- Add cancel button? -->
+        </div>
+    </div>
+
+    <div id="game-end-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="game-end-message"></h3></div>
+            <div class="modal-body">
+                <!-- Maybe show final position snapshot or scores? -->
+            </div>
+            <div class="modal-footer">
+                 <button id="analyze-game-modal-button" class="btn secondary-btn"><i class="fas fa-search"></i> Analyser</button>
+                 <button id="play-again" class="btn primary-btn"><i class="fas fa-redo"></i> Rejouer</button>
+                 <button id="main-menu-button" class="btn secondary-btn"><i class="fas fa-list"></i> Menu Principal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur pour les Toasts -->
+    <div class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="chess.js"></script>
+    <script type="module">
+        // Expose chess.js globally if needed by other non-module scripts (less ideal)
+        import { Chess } from './chess.js';
+        window.Chess = Chess;
+    </script>
+    <script src="scripts-v2.js" type="module"></script>
+    <!-- stockfish.wasm.js is loaded as a worker inside scripts-v1.js -->
+
+</body>
+</html>

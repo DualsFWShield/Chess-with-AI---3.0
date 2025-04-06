@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apprendre les Échecs - DFWS Chess</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Utiliser le même CSS que le jeu principal -->
+    <link rel="stylesheet" href="styles-v2.css">
+    <style>
+        /* Styles spécifiques pour la page d'apprentissage */
+        body {
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .learn-container {
+            max-width: 1000px;
+            width: 100%;
+            margin: auto;
+        }
+
+        .learn-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .learn-header h1 {
+            font-size: 1.6em;
+            margin: 0 10px 0 0;
+        }
+
+        .learn-header a {
+            flex-shrink: 0;
+        }
+
+        /* Empêche le bouton de rétrécir */
+
+        .learn-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            /* Colonne unique par défaut */
+            gap: 20px;
+        }
+
+        .feedback.info {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .feedback.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .feedback.error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .feedback {
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .feedback.visible {
+            opacity: 1;
+        }
+
+        #lesson-feedback {
+            transition: opacity 0.3s ease;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+            opacity: 0;
+        }
+
+        #lesson-feedback.visible {
+            opacity: 1;
+        }
+
+        #lesson-feedback.success {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        #lesson-feedback.error {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+        }
+
+        #lesson-feedback.info {
+            background-color: rgba(33, 150, 243, 0.15);
+            color: #2196F3;
+        }
+
+        /* Mise en page pour écrans plus larges */
+        @media (min-width: 800px) {
+            .learn-layout {
+                grid-template-columns: 1fr auto;
+                /* Instructions | Échiquier */
+            }
+
+            .learn-board-area {
+                order: 2;
+            }
+
+            /* Met le plateau à droite */
+            .learn-lesson-area {
+                order: 1;
+            }
+
+            /* Met les leçons à gauche */
+        }
+
+
+        .learn-lesson-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .lesson-content-box {
+            background: var(--surface-color);
+            border: 1px solid var(--secondary-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .lesson-content-box h2 {
+            /* Titre de la leçon */
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.4em;
+        }
+
+        #lesson-objective {
+            /* Objectif clair */
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: rgba(74, 102, 160, 0.1);
+            /* Fond léger primaire */
+            border-left: 4px solid var(--primary-color);
+            border-radius: 4px;
+            min-height: 1.5em;
+        }
+
+        #lesson-explanation {
+            /* Explications */
+            font-size: 1em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            min-height: 4em;
+        }
+
+        #lesson-feedback {
+            /* Feedback après action */
+            min-height: 1.5em;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px;
+            border-radius: 4px;
+            visibility: hidden;
+            /* Caché par défaut */
+            opacity: 0;
+            transition: visibility 0s linear 0.3s, opacity 0.3s ease;
+        }
+
+        #lesson-feedback.visible {
+            visibility: visible;
+            opacity: 1;
+            transition-delay: 0s;
+        }
+
+        #lesson-feedback.success {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        #lesson-feedback.error {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+        }
+
+
+        .lesson-controls {
+            display: flex;
+            justify-content: space-between;
+            /* Espace les boutons */
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            /* Permet le retour à la ligne */
+            gap: 10px;
+        }
+
+        #lesson-navigation {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Regroupe Préc/Suivant */
+        .lesson-controls button {
+            font-size: 0.9em;
+            padding: 8px 15px;
+        }
+
+        /* Zone de l'échiquier */
+        .learn-board-area {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .board-wrapper {
+            width: 100%;
+            max-width: 480px;
+            /* Ajuster taille max */
+            margin: 0;
+            position: relative;
+            /* Pour les overlays si besoin */
+            background: transparent;
+            /* Pas de fond ici */
+            padding: 0;
+            box-shadow: none;
+        }
+
+        #chessboard {
+            /* Le style vient de styles-v2.css */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+            /* Ombre sur l'échiquier lui-même */
+            border-radius: 8px;
+        }
+
+        /* Highlighting pour les leçons */
+        .square.highlight-lesson-piece::after {
+            /* Pièce à bouger */
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border: 3px solid rgba(255, 165, 0, 0.8);
+            /* Orange solide */
+            border-radius: 50%;
+            /* Cercle */
+            pointer-events: none;
+            animation: pulse-suggest 1.5s infinite ease-in-out;
+            /* Réutiliser l'animation */
+        }
+
+        .square.highlight-lesson-target::after {
+            /* Case cible */
+            content: '';
+            position: absolute;
+            width: 40%;
+            /* Plus petit */
+            height: 40%;
+            background-color: rgba(40, 180, 40, 0.6);
+            /* Vert semi-transparent */
+            border-radius: 50%;
+            top: 30%;
+            left: 30%;
+            pointer-events: none;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .square.highlight-lesson-allowed {
+            /* Case de déplacement permise (moins visible) */
+            background-color: rgba(74, 102, 160, 0.15);
+            /* Légèrement bleuté */
+        }
+
+        #chessboard {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            width: 480px;
+            /* ou une autre largeur appropriée */
+            height: 480px;
+            /* pour conserver un ratio carré */
+            border: 2px solid var(--secondary-color);
+            border-radius: 8px;
+        }
+
+        .square {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Exemple de coloration pour les cases */
+        .light {
+            background-color: #f0d9b5;
+        }
+
+        .dark {
+            background-color: #b58863;
+        }
+
+        /* Pour visualiser la sélection / dernier coup */
+        .selected {
+            outline: 3px solid rgba(255, 0, 0, 0.7);
+        }
+
+        .last-move {
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .learn-board-area {
+                order: -1;
+                margin-bottom: 15px;
+            }
+
+            .board-wrapper {
+                max-width: 95%;
+                margin: auto;
+            }
+
+            /* Centrer sur mobile */
+            .learn-header {
+                text-align: center;
+                justify-content: center;
+            }
+
+            .lesson-controls {
+                justify-content: center;
+            }
+
+            /* Centrer les contrôles */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="learn-container">
+
+        <div class="learn-header">
+            <h1><i class="fas fa-graduation-cap"></i> Apprendre les Échecs</h1>
+            <a href="index.html" class="btn secondary-btn"><i class="fas fa-times"></i> Fermer</a>
+        </div>
+
+        <div class="learn-layout">
+
+            <div class="learn-lesson-area">
+                <div class="lesson-content-box">
+                    <h2 id="lesson-title">Chargement...</h2>
+                    <div id="lesson-objective"></div>
+                    <div id="lesson-explanation"></div>
+                    <div id="lesson-feedback">Feedback ici</div>
+                </div>
+
+                <div class="lesson-controls">
+                    <button id="reset-exercise" class="btn secondary-btn" title="Réinitialiser cet exercice"><i
+                            class="fas fa-undo"></i> Réessayer</button>
+                    <div id="lesson-navigation">
+                        <button id="prev-lesson" class="btn secondary-btn"><i class="fas fa-arrow-left"></i>
+                            Précédent</button>
+                        <button id="next-lesson" class="btn primary-btn">Suivant <i
+                                class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="learn-board-area">
+                <div class="board-wrapper">
+                    <div id="chessboard">
+                        <!-- Plateau généré par JS -->
+                        <div style="padding: 20px; color: #aaa; text-align: center;">Chargement du plateau...</div>
+                    </div>
+                    <!-- SVG Overlay peut être ajouté ici si besoin de flèches plus tard -->
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- Fin learn-container -->
+
+    <!-- Scripts -->
+    <script type="module" src="chess.js"></script>
+    <script type="module">
+        import { Chess } from './chess.js';
+        window.Chess = Chess; // Exposer globalement
+    </script>
+    <script src="learn.js" type="module"></script>
+
+</body>
+
+</html>
