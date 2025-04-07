@@ -35,10 +35,6 @@
             <button id="ai-delay-toggle" class="control-button" title="Basculer Délai IA">
                 <i class="fas fa-clock"></i>
             </button>
-            <button id="mode-puzzle" class="mode-button">
-                <i class="fas fa-puzzle-piece"></i>
-                <span>Puzzles</span>
-            </button>
         </div>
 
         <!-- Menu Principal -->
@@ -56,6 +52,10 @@
                 <button id="mode-ai-ai" class="mode-button">
                     <i class="fas fa-robot"></i><i class="fas fa-robot" style="margin-left: -5px;"></i>
                     <span>IA vs IA</span>
+                </button>
+                <button id="mode-puzzle" class="mode-button">
+                    <i class="fas fa-puzzle-piece"></i>
+                    <span>Puzzles</span>
                 </button>
             </div>
         </div>
@@ -424,9 +424,9 @@
         import { Chess } from './chess.js';
         window.Chess = Chess;
     </script>
-    <script src="puzzle.js"></script>
+    <script type="module" src="puzzle.js"></script>
     <script src="scripts-v3.js" type="module"></script>
-<script src="puzzle_.json" type="module"></script>
+    <script src="puzzles_data.json"></script>
     <!-- stockfish.wasm.js is loaded as a worker inside scripts-v1.js -->
 
 </body>

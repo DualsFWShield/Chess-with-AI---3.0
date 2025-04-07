@@ -20,6 +20,8 @@ const TIME_SETTINGS = { // Time in seconds
     unlimited: 999999 // Effectively unlimited (used as flag)
 };
 
+import { PUZZLE } from './puzzle.js';
+
 // --- Game Instance (using chess.js) ---
 let game = new Chess(); // The core game logic handler
 

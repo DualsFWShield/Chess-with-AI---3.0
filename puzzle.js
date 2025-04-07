@@ -268,6 +268,7 @@ const PUZZLE = (() => {
     };
 })();
 
+export { PUZZLE };
 // Optional: Preload puzzles when the script loads
 // PUZZLE.ensureLoaded();
 
