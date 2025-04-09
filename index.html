@@ -35,6 +35,9 @@
             <button id="ai-delay-toggle" class="control-button" title="Basculer Délai IA">
                 <i class="fas fa-clock"></i>
             </button>
+            <button id="flip-board-toggle" class="control-button" title="Basculer Orientation (Humain vs Humain)">
+                <i class="fas fa-sync-alt"></i>
+            </button>
         </div>
 
         <!-- Menu Principal -->
@@ -50,12 +53,16 @@
                     <span>Jouer contre un humain</span>
                 </button>
                 <button id="mode-ai-ai" class="mode-button">
-                    <i class="fas fa-robot"></i><i class="fas fa-robot" style="margin-left: -5px;"></i>
+                    <i class="fas fa-robot"></i><i class="fas fa-robot"></i>
                     <span>IA vs IA</span>
                 </button>
-                <button id="mode-puzzle" class="mode-button">
+                <button id="mode-puzzle" class="mode-button" style="display: none;">
                     <i class="fas fa-puzzle-piece"></i>
                     <span>Puzzles</span>
+                </button>
+                <button id="mode-analysis-board" class="mode-button">
+                    <i class="fas fa-flask"></i>
+                    <span>Échiquier d'Analyse</span>
                 </button>
             </div>
         </div>
@@ -358,10 +365,24 @@
                             class="fas fa-times-circle"></i></button>
                 </div>
 
+                <!-- Live Analysis Display (for Analysis Board mode) -->
+                <div id="live-analysis-display" class="analysis-info" style="display: none; margin-top: 15px; padding: 10px; font-size: 0.9em;">
+                    <h3>Analyse en Direct</h3>
+                    <div id="live-analysis-score" style="font-weight: bold; margin-bottom: 5px;">Score: N/A</div>
+                    <div id="live-analysis-best-move" style="margin-bottom: 5px;">Meilleur: <span>N/A</span></div>
+                    <div id="live-analysis-classification" style="font-style: italic;">Classification: N/A</div>
+                </div>
+
                 <!-- Historique des Coups -->
                 <div class="moves-container">
                     <h3>Historique</h3>
                     <ol id="move-list"></ol>
+                </div>
+
+                <!-- Accuracy Graph -->
+                <div id="accuracy-graph-container" style="margin-top: 15px; display: none;">
+                     <h4 style="text-align: center; margin-bottom: 5px;">Précision</h4>
+                     <canvas id="accuracy-graph" width="280" height="100" style="background-color: var(--secondary-color); border-radius: 4px;"></canvas>
                 </div>
             </div>
         </div>
@@ -426,7 +447,6 @@
     </script>
     <script type="module" src="puzzle.js"></script>
     <script src="scripts-v3.js" type="module"></script>
-    <script src="puzzles_data.json"></script>
     <!-- stockfish.wasm.js is loaded as a worker inside scripts-v1.js -->
 
 </body>

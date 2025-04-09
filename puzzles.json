@@ -1,0 +1,41 @@
+[
+  {
+    "puzzle": {
+      "id": "local001",
+      "rating": 1500,
+      "themes": ["mate", "mateIn1"],
+      "solution": ["g1h3"],
+      "initialPly": 6
+    },
+    "game": {
+      "pgn": "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 *",
+      "comment": "White to play and mate in 1."
+    }
+  },
+  {
+    "puzzle": {
+      "id": "local002",
+      "rating": 1650,
+      "themes": ["fork", "endgame"],
+      "solution": ["f6e4", "h4e4", "g5f7"],
+      "initialPly": 58
+    },
+    "game": {
+      "pgn": "1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. cxd5 exd5 5. Bg5 Be7 6. e3 O-O 7. Bd3 Nbd7 8. Qc2 Re8 9. Nf3 c6 10. O-O Nf8 11. Rab1 Ne4 12. Bxe7 Qxe7 13. Bxe4 dxe4 14. Nd2 f5 15. b4 Be6 16. b5 c5 17. d5 Bf7 18. Nc4 Rad8 19. Rfd1 Qf6 20. a4 Ng6 21. a5 Ne5 22. Nxe5 Qxe5 23. Qb3 Rd6 24. Rd2 Red8 25. Rbd1 Bh5 26. Rc1 Bf7 27. Rcd1 h6 28. Qa3 Kh7 29. Qxc5 b6 *",
+      "comment": "Black to play. Fork the King and Queen."
+    }
+  },
+  {
+    "puzzle": {
+      "id": "local003",
+      "rating": 1400,
+      "themes": ["sacrifice", "attack"],
+      "solution": ["d5h5", "g6h5", "g5f6"],
+      "initialPly": 33
+    },
+    "game": {
+      "pgn": "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3 e6 7. f3 Be7 8. Qd2 Qc7 9. O-O-O O-O 10. g4 b5 11. g5 Nfd7 12. h4 Nc6 13. h5 Nxd4 14. Bxd4 b4 15. Ne2 Rb8 16. g6 Bf6 17. gxh7+ Kxh7 *",
+      "comment": "White to play. Sacrifice the Queen to open up the King."
+    }
+  }
+]

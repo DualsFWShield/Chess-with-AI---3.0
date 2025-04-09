@@ -184,6 +184,17 @@ function setupMenusAndButtons() {
         else console.warn(`Button '${id}' not found.`);
     });
 
+    // Add analysis board button event listener
+    const analysisButton = document.getElementById('mode-analysis-board');
+    if (analysisButton) {
+        analysisButton.addEventListener('click', () => {
+            // Navigate directly to the review page (analysis board)
+            window.location.href = 'review.html';
+        });
+    } else {
+        console.warn("Button 'mode-analysis-board' not found.");
+    }
+
     // Puzzle Mode Button
     const puzzleModeButton = document.getElementById('mode-puzzle');
     if (puzzleModeButton) puzzleModeButton.addEventListener('click', () => setupGameMode('puzzle'));
@@ -363,10 +374,13 @@ function returnToMainMenu() {
     resetBoardState(); // Full main game reset
     game = new Chess(); // Reset main chess instance
 
-    // Reset puzzle state if exiting from puzzle mode
-    PUZZLE.resetSession(); // Reset used puzzles for next time
-    currentPuzzle = null; // Ensure puzzle state is cleared
-    puzzleGame = null;
+    showScreen(mainMenuEl);
+    document.body.classList.remove('game-active', 'puzzle-mode-active'); // Remove specific mode classes
+
+    // Stop the puzzle if it's running
+    if (gameMode === 'puzzle') {
+        PUZZLE.stopPuzzle(); // Call the stop method from the PUZZLE module
+    }
 
     // Reset progress bar visibility if it was hidden
     const progressBar = document.getElementById('progress-bar');
@@ -1386,7 +1400,7 @@ function handleSquareClick(event) {
 
          if (targetMove) {
             // --- Valid Move Target --- (Main Game)
-            const fromSquareEl = chessboard.querySelector(`.square[data-row="${algToCoord(fromAlg)[0]}"][data-col="${algToCoord(fromAlg)[1]}"]`);
+            const fromSquareEl = chessboard.querySelector(`.square[data-row="${algToCoord(fromAlg)[0]}"][data-col="${algToCoord[fromAlg][1]}"]`);
             if(fromSquareEl) fromSquareEl.classList.remove('selected');
             highlightMoves([]);
 
@@ -1413,7 +1427,7 @@ function handleSquareClick(event) {
             }
         } else {
             // Case 3: Clicked an invalid destination or another own piece (Main Game)
-            const oldSquareEl = chessboard.querySelector(`.square[data-row="${algToCoord(fromAlg)[0]}"][data-col="${algToCoord(fromAlg)[1]}"]`);
+            const oldSquareEl = chessboard.querySelector(`.square[data-row="${algToCoord(fromAlg)[0]}"][data-col="${algToCoord[fromAlg][1]}"]`);
             if(oldSquareEl) oldSquareEl.classList.remove('selected');
 
             if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
@@ -2018,10 +2032,19 @@ function showConfetti() {
 }
 
 // --- PUZZLE ---
-
+// --- PUZZLE ---
 const hintButton = document.getElementById('hint-button');
 const nextPuzzleButton = document.getElementById('next-puzzle-button');
 const exitPuzzleButton = document.getElementById('exit-puzzle-button');
+
+// Function to handle puzzle loading errors
+function handlePuzzleLoadError(errorMessage) {
+    console.error("Puzzle Load Error:", errorMessage);
+    updateGameStatus(`Erreur: ${errorMessage}`);
+    showToast(`Erreur de puzzle: ${errorMessage}`, 'fa-exclamation-triangle', 5000);
+    // Optionally force return to main menu or disable puzzle mode
+    returnToMainMenu(); // Ensure this cleans up puzzle state if needed
+}
 
 // Modify startPuzzleSession to be async
 async function startPuzzleSession() { // Add async keyword
@@ -2030,50 +2053,50 @@ async function startPuzzleSession() { // Add async keyword
     isGameOver = false;
     isReviewing = false;
     clearInterval(timerInterval);
-    resetBoardStateForPuzzle();
+    resetBoardStateForPuzzle(); // Reset UI elements
 
-    // Ensure puzzles are loaded (await the loading)
-    const loaded = await PUZZLE.ensureLoaded();
-    if (!loaded) {
-         updateGameStatus("Erreur: Impossible de charger les puzzles.");
-         showToast("Impossible de charger les données des puzzles.", 'fa-times-circle', 5000);
-         // Optionally return to main menu or disable puzzle mode
-         returnToMainMenu();
-         return;
-    }
-
-
+    // Setup callbacks *before* fetching, including the error handler
     PUZZLE.setupCallbacks({
         onComplete: handlePuzzleComplete,
         onIncorrect: handlePuzzleIncorrectMove,
         onCorrect: handlePuzzleCorrectMove,
-        onOpponentMove: handlePuzzleOpponentMove
+        onOpponentMove: handlePuzzleOpponentMove,
+        onLoadError: handlePuzzleLoadError // Add the error callback
     });
 
-    // Await the result of getting the next puzzle
-    const puzzleData = await PUZZLE.getNextPuzzle(); // Add await
+    // Fetch a new puzzle from the API
+    updateGameStatus("Chargement du puzzle..."); // Indicate loading
+    const puzzleData = await PUZZLE.fetchNewPuzzle(); // Use fetchNewPuzzle
 
+    // fetchNewPuzzle returns null on failure and triggers onLoadError callback
     if (!puzzleData) {
-        updateGameStatus("Tous les puzzles sont terminés !");
-        showToast("Félicitations ! Vous avez terminé tous les puzzles.", 'fa-check-circle', 5000);
-        if(nextPuzzleButton) nextPuzzleButton.disabled = true;
-        if(hintButton) hintButton.disabled = true;
-        if(exitPuzzleButton) exitPuzzleButton.style.display = 'flex';
-        return;
+        // Error handling is now done within handlePuzzleLoadError
+        // We might still need a generic message if fetch returns null without specific error callback trigger
+        console.log("Failed to fetch puzzle data (null returned).");
+        // handlePuzzleLoadError might have already been called by fetchNewPuzzle
+        // If not, call it here or show a generic message
+        // updateGameStatus("Erreur: Impossible de charger un nouveau puzzle.");
+        // showToast("Impossible de récupérer un puzzle.", 'fa-times-circle', 5000);
+        // returnToMainMenu(); // Ensure cleanup
+        return; // Exit if no puzzle data
     }
 
+    // Try to start the fetched puzzle
     if (!PUZZLE.startPuzzle(puzzleData)) {
-        updateGameStatus("Erreur chargement puzzle.");
-        returnToMainMenu();
-        return;
+        // Error handling is now done within handlePuzzleLoadError (called by startPuzzle on failure)
+        console.log("Failed to start puzzle (startPuzzle returned false).");
+        // handlePuzzleLoadError might have already been called by startPuzzle
+        // returnToMainMenu(); // Ensure cleanup
+        return; // Exit if puzzle couldn't be started
     }
 
+    // Puzzle started successfully, update UI
     document.body.classList.add('puzzle-mode-active');
     showScreen(gameLayoutEl);
-    updatePuzzleUI();
+    updatePuzzleUI(); // Initial UI setup for the loaded puzzle
 }
 
-// Reset function specific to starting a puzzle (might be simpler than full game reset)
+// Reset function specific to starting a puzzle (UI cleanup)
 function resetBoardStateForPuzzle() {
     selectedSquareAlg = null;
     lastMoveHighlight = null;
@@ -2081,119 +2104,153 @@ function resetBoardStateForPuzzle() {
     if (capturedWhiteEl) capturedWhiteEl.innerHTML = ''; // Clear captures
     if (capturedBlackEl) capturedBlackEl.innerHTML = '';
     if (scoreAdvantageEl) scoreAdvantageEl.textContent = ''; // Clear score
-     // Clear board visually - createBoard will handle redraw
-     if(chessboard) chessboard.innerHTML = '';
-     // Reset button states controlled by updatePuzzleUI
+    if (chessboard) chessboard.innerHTML = ''; // Clear board visually
+    // Reset button states (will be updated by updatePuzzleUI)
+    if (hintButton) hintButton.style.display = 'none';
+    if (nextPuzzleButton) nextPuzzleButton.style.display = 'none';
+    if (exitPuzzleButton) exitPuzzleButton.style.display = 'none';
+    document.body.classList.remove('puzzle-mode-active'); // Remove class on reset
 }
 
+// Update UI based on current puzzle state from PUZZLE module
 function updatePuzzleUI() {
     const puzzleInfo = PUZZLE.getCurrentPuzzleData();
-    if (!puzzleInfo) return;
+    if (!puzzleInfo) {
+        console.warn("updatePuzzleUI called but no current puzzle data found.");
+        // Maybe reset to a default state or show an error?
+        // For now, just return to avoid errors.
+        return;
+    }
 
     updateGameStatus(`${puzzleInfo.playerColor === 'w' ? 'Blancs' : 'Noirs'} jouent : ${puzzleInfo.description}`);
-    createBoard(PUZZLE.getPuzzleInstance(), puzzleInfo.playerColor); // Pass puzzle game instance and player color
-    updatePlayerTurnIndicator(puzzleInfo.isPlayerTurn ? puzzleInfo.playerColor : null); // Highlight based on puzzle turn
-    updatePuzzleControls(false); // Initially puzzle not solved
+    // Ensure createBoard can handle the chess.js instance and player color
+    createBoard(PUZZLE.getPuzzleInstance(), puzzleInfo.playerColor);
+    updatePlayerTurnIndicator(puzzleInfo.isPlayerTurn ? puzzleInfo.playerColor : null);
+    updatePuzzleControls(false); // Puzzle is ongoing initially
 
-    // Hide timer elements or repurpose them?
+    // Update side panel info
     if(whiteTimeEl) whiteTimeEl.textContent = "Puzzle";
-    if(blackTimeEl) blackTimeEl.textContent = `${PUZZLE.getCurrentPuzzleData()?.id || ''}`; // Show puzzle ID?
+    if(blackTimeEl) blackTimeEl.textContent = `ID: ${puzzleInfo.id || 'N/A'}`; // Show puzzle ID
 
-    // Update player names
     if(player1NameEl) player1NameEl.textContent = puzzleInfo.playerColor === 'w' ? "Joueur" : "Puzzle";
-    if(player1RatingEl) player1RatingEl.textContent = ""; // No rating
+    if(player1RatingEl) player1RatingEl.textContent = `(${puzzleInfo.rating || '????'})`; // Show puzzle rating
     if(player2NameEl) player2NameEl.textContent = puzzleInfo.playerColor === 'b' ? "Joueur" : "Puzzle";
-    if(player2RatingEl) player2RatingEl.textContent = "";
+    if(player2RatingEl) player2RatingEl.textContent = `(${puzzleInfo.rating || '????'})`; // Show puzzle rating
 
-     // Hide progress bar?
-     const progressBar = document.getElementById('progress-bar');
-     if (progressBar) progressBar.style.visibility = 'hidden';
+    // Hide progress bar if it exists
+    const progressBar = document.getElementById('progress-bar');
+    if (progressBar) progressBar.style.visibility = 'hidden';
 
+    // Apply last move highlight if available (after createBoard)
+    if (lastMoveHighlight) {
+        highlightLastMove(lastMoveHighlight.from, lastMoveHighlight.to);
+    }
+    // Apply check highlight if needed (after createBoard)
+    checkAndUpdateKingStatus(PUZZLE.getPuzzleInstance());
 }
 
+// Update visibility and state of puzzle control buttons
 function updatePuzzleControls(isComplete) {
+    const puzzleData = PUZZLE.getCurrentPuzzleData();
+    const isPlayerTurn = puzzleData ? puzzleData.isPlayerTurn : false;
+
     if (hintButton) {
         hintButton.style.display = 'flex';
-        hintButton.disabled = isComplete || !PUZZLE.getCurrentPuzzleData()?.isPlayerTurn;
+        // Disable hint if puzzle is complete OR it's not the player's turn
+        hintButton.disabled = isComplete || !isPlayerTurn;
     }
     if (nextPuzzleButton) {
         nextPuzzleButton.style.display = 'flex';
-        nextPuzzleButton.disabled = !isComplete; // Only enable when puzzle solved
+        // Enable 'Next' only when the current puzzle is complete
+        nextPuzzleButton.disabled = !isComplete;
     }
-     if (exitPuzzleButton) {
-         exitPuzzleButton.style.display = 'flex';
-         exitPuzzleButton.disabled = false;
-     }
+    if (exitPuzzleButton) {
+        exitPuzzleButton.style.display = 'flex';
+        exitPuzzleButton.disabled = false; // Exit should always be available
+    }
 }
+
+// --- Puzzle Event Handlers (Called by PUZZLE module callbacks) ---
 
 function handlePuzzleComplete(puzzleId) {
     showToast(`Puzzle ${puzzleId} résolu !`, 'fa-check-circle', 2000);
     playSound('win'); // Or a specific puzzle success sound
     updateGameStatus("Puzzle résolu ! Cliquez sur 'Suivant'.");
-     updatePuzzleControls(true); // Enable Next button, disable Hint
+    updatePuzzleControls(true); // Enable Next button, disable Hint
 }
 
-function handlePuzzleIncorrectMove(fromAlg, toAlg) {
+function handlePuzzleIncorrectMove() {
     showToast("Mauvais coup. Essayez encore.", 'fa-times-circle', 1500);
     playSound('illegal');
     updateGameStatus("Mauvais coup. Réessayez !");
-     // Deselect piece if one was selected
-     if (selectedSquareAlg) {
-        const selCoord = algToCoord(selectedSquareAlg);
-        const squareEl = chessboard.querySelector(`.square[data-row="${selCoord[0]}"][data-col="${selCoord[1]}"]`);
-        if (squareEl) squareEl.classList.remove('selected');
+    // Deselect piece visually if one was selected
+    if (selectedSquareAlg) {
+        deselectSquare(selectedSquareAlg); // Use helper if available
         highlightMoves([]); // Clear highlights
         selectedSquareAlg = null;
-     }
-    // No board update needed, player needs to retry from current position
-    updatePuzzleControls(false); // Ensure hint is enabled if it's player's turn
+    }
+    // Board state doesn't change in PUZZLE module, so no redraw needed
+    updatePuzzleControls(false); // Ensure hint is enabled (since it's still player's turn)
 }
 
 function handlePuzzleCorrectMove(moveResult) {
-     showToast("Correct !", 'fa-thumbs-up', 1000);
-    playSound('move'); // Or capture, etc. based on moveResult flags
+    showToast("Correct !", 'fa-thumbs-up', 1000);
+    // Determine sound based on move flags (capture, check, etc.)
+    let sound = 'move';
+    if (moveResult.flags.includes('c')) sound = 'capture';
+    if (moveResult.flags.includes('k') || moveResult.flags.includes('q')) sound = 'castle'; // If using standard flags
+    if (moveResult.san.includes('+') || moveResult.san.includes('#')) sound = 'check';
+    playSound(sound);
+
     lastMoveHighlight = { from: moveResult.from, to: moveResult.to };
-    createBoard(PUZZLE.getPuzzleInstance(), PUZZLE.getCurrentPuzzleData()?.playerColor); // Redraw board
-    checkAndUpdateKingStatus(PUZZLE.getPuzzleInstance()); // Check check status on puzzle board
-    updateGameStatus("Correct ! Au tour de l'adversaire...");
-     updatePuzzleControls(false); // Disable hint while opponent thinks/moves
+    // PUZZLE module updated its internal board, now update UI
+    updatePuzzleUI(); // Redraw board, update status, check king, update controls
+    updateGameStatus("Correct ! Au tour de l'adversaire..."); // Update status message
+    // updatePuzzleControls(false) is called within updatePuzzleUI
 }
 
 function handlePuzzleOpponentMove(moveResult) {
-     playSound('move2'); // Opponent sound
-     lastMoveHighlight = { from: moveResult.from, to: moveResult.to };
-     createBoard(PUZZLE.getPuzzleInstance(), PUZZLE.getCurrentPuzzleData()?.playerColor); // Redraw board
-     checkAndUpdateKingStatus(PUZZLE.getPuzzleInstance()); // Check check status on puzzle board
-     updateGameStatus("Votre tour.");
-     updatePuzzleControls(false); // Re-enable hint for player's turn
+     // Determine sound based on move flags
+    let sound = 'move2'; // Opponent move sound
+    if (moveResult.flags.includes('c')) sound = 'capture';
+    if (moveResult.flags.includes('k') || moveResult.flags.includes('q')) sound = 'castle';
+    if (moveResult.san.includes('+') || moveResult.san.includes('#')) sound = 'check';
+    playSound(sound);
+
+    lastMoveHighlight = { from: moveResult.from, to: moveResult.to };
+    // PUZZLE module updated its internal board, now update UI
+    updatePuzzleUI(); // Redraw board, update status, check king, update controls
+    updateGameStatus("Votre tour."); // Update status message
+    // updatePuzzleControls(false) is called within updatePuzzleUI
 }
+
+// --- Puzzle Actions ---
 
 function showHint() {
-     if (gameMode !== 'puzzle') return;
-     const hint = PUZZLE.getHint(); // Gets { from, to, promotion? }
-     if (hint) {
+    if (gameMode !== 'puzzle') return;
+    const hint = PUZZLE.getHint(); // Gets { from, to, promotion? }
+    if (hint) {
         // Highlight the 'from' square strongly
-        const fromCoord = algToCoord(hint.from);
-        const fromSq = chessboard.querySelector(`.square[data-row="${fromCoord[0]}"][data-col="${fromCoord[1]}"]`);
-        if (fromSq) {
-            // Add a temporary visual hint
-            fromSq.classList.add('hint-from');
-            setTimeout(() => fromSq.classList.remove('hint-from'), 1500); // Remove after 1.5s
-        }
-         // Highlight the 'to' square subtly
-         const toCoord = algToCoord(hint.to);
-         const toSq = chessboard.querySelector(`.square[data-row="${toCoord[0]}"][data-col="${toCoord[1]}"]`);
-         if (toSq) {
-            toSq.classList.add('hint-to');
-             setTimeout(() => toSq.classList.remove('hint-to'), 1500);
-         }
+        highlightHintSquare(hint.from, 'hint-from');
+        // Highlight the 'to' square subtly
+        highlightHintSquare(hint.to, 'hint-to');
 
-         showToast(`Indice : Jouez depuis ${hint.from}`, 'fa-lightbulb', 2000);
-         playSound('click');
-     } else {
-         showToast("Aucun indice disponible.", 'fa-info-circle');
-     }
+        showToast(`Indice : Jouez depuis ${hint.from}`, 'fa-lightbulb', 2000);
+        playSound('click'); // Sound for getting a hint
+    } else {
+        showToast("Aucun indice disponible.", 'fa-info-circle');
+    }
 }
 
-console.log("scripts-v1.js (using chess.js, with time/export/review-stub/learn-ai) loaded.");
-// --- END OF FILE scripts-v1.js ---
+// Helper to highlight hint squares temporarily
+function highlightHintSquare(alg, className) {
+    const coord = algToCoord(alg);
+    if (!coord) return;
+    const squareEl = chessboard.querySelector(`.square[data-row="${coord[0]}"][data-col="${coord[1]}"]`);
+    if (squareEl) {
+        squareEl.classList.add(className);
+        setTimeout(() => squareEl.classList.remove(className), 1500); // Remove after 1.5s
+    }
+}
+console.log("scripts-v3.js (with PUZZLE integration) loaded.");
+// --- END OF MODIFIED PUZZLE SECTION ---
