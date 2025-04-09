@@ -1860,33 +1860,59 @@ function updateRatings(playerWonVsAI) { // playerWonVsAI: true (player win), fal
 }
 
 function updateRatingDisplay() {
-    // Update the ELO in the stats box immediately if it's visible
     const playerEloStatsEl = document.getElementById('player-elo-stats');
      if (playerEloStatsEl && statsContainerEl && statsContainerEl.style.display !== 'none') {
         playerEloStatsEl.textContent = playerRating;
     }
 
-    if (!player1RatingEl || !player2RatingEl || !player1NameEl || !player2NameEl) return;
+    if (!player1RatingEl || !player2RatingEl || !player1NameEl || !player2NameEl) {
+        console.warn("Player info elements missing, cannot update display.");
+        return;
+    }
 
-    // Update player info boxes based on current game mode
-    let p1Name = "Joueur Blanc"; let p1Elo = "----";
-    let p2Name = "Joueur Noir"; let p2Elo = "----";
+    // Define ratings map here as well for consistency
+    const difficultyRatings = {
+        'Learn': 600, 'Noob': 800, 'Easy': 1000, 'Regular': 1200, 'Hard': 1400,
+        'Very Hard': 1600, 'Super Hard': 1800, 'Magnus Carlsen': 2850, 'Unbeatable': 3000,
+        'Adaptative': aiRating, // Use current adaptive rating
+        'AI100': 100, 'AI200': 200
+    };
+
+    let p1Name = "Joueur 1"; let p1Elo = "----";
+    let p2Name = "Joueur 2"; let p2Elo = "----";
 
     if (gameMode === 'ai') {
         p1Name = "Joueur"; p1Elo = playerRating.toString();
-        // Get AI rating for display
-         const difficultyRatings = { 'Learn': 600, 'Noob': 800, 'Easy': 1000, 'Regular': 1200, 'Hard': 1400, 'Very Hard': 1600, 'Super Hard': 1800, 'Magnus Carlsen': 2850, 'Unbeatable': 3000, 'Adaptative': aiRating, 'AI100': 100, 'AI200': 200 };
-         const displayAIRating = difficultyRatings[aiDifficulty] || "?";
-         p2Name = `IA (${aiDifficulty || '?'})`; p2Elo = displayAIRating.toString();
+        const displayAIRating = difficultyRatings[aiDifficulty] || "?"; // Get rating from map
+        // Use a shorter name for the AI display if possible
+        const aiDisplayName = aiDifficulty.replace("Very Hard", "T.Difficile").replace("Super Hard", "Expert").replace("Magnus Carlsen", "Carlsen").replace("Unbeatable", "Invincible").replace("Adaptative", "Adaptatif");
+        p2Name = `IA (${aiDisplayName || '?'})`;
+        p2Elo = displayAIRating.toString();
     } else if (gameMode === 'human') {
         p1Name = "Joueur 1 (Blanc)";
         p2Name = "Joueur 2 (Noir)";
+        // Could potentially show Elo if players were logged in/had profiles
     } else if (gameMode === 'ai-vs-ai') {
-        p1Name = `IA Blanc (${aiDifficultyWhite || '?'})`;
-        p2Name = `IA Noir (${aiDifficultyBlack || '?'})`;
+        const whiteAiDisplayName = aiDifficultyWhite.replace("Very Hard", "T.Difficile").replace("Super Hard", "Expert").replace("Magnus Carlsen", "Carlsen").replace("Unbeatable", "Invincible").replace("Adaptative", "Adaptatif");
+        const blackAiDisplayName = aiDifficultyBlack.replace("Very Hard", "T.Difficile").replace("Super Hard", "Expert").replace("Magnus Carlsen", "Carlsen").replace("Unbeatable", "Invincible").replace("Adaptative", "Adaptatif");
+        p1Name = `IA Blanc (${whiteAiDisplayName || '?'})`;
+        p2Name = `IA Noir (${blackAiDisplayName || '?'})`;
+        p1Elo = (difficultyRatings[aiDifficultyWhite] || '????').toString();
+        p2Elo = (difficultyRatings[aiDifficultyBlack] || '????').toString();
+    } else if (gameMode === 'puzzle') {
+        const puzzleInfo = PUZZLE.getCurrentPuzzleData();
+        if (puzzleInfo) {
+             p1Name = puzzleInfo.playerColor === 'w' ? "Joueur" : "Puzzle";
+             p1Elo = `(${puzzleInfo.rating || '????'})`;
+             p2Name = puzzleInfo.playerColor === 'b' ? "Joueur" : "Puzzle";
+             p2Elo = `(ID: ${puzzleInfo.id || 'N/A'})`; // Show ID for black in puzzle mode?
+        } else {
+             p1Name = "Puzzle"; p1Elo = "(?)";
+             p2Name = "Puzzle"; p2Elo = "(?)";
+        }
     } else { // Default / Main Menu state
-         p1Name = "Joueur 1";
-         p2Name = "Joueur 2";
+        p1Name = "Joueur Blanc";
+        p2Name = "Joueur Noir";
     }
 
     player1NameEl.textContent = p1Name; player1RatingEl.textContent = p1Elo;

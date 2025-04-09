@@ -209,136 +209,171 @@ const PUZZLE = (() => {
                 console.warn("Puzzle move rejected: Not player's turn or no active puzzle.");
                 return 'invalid_state';
             }
-
+        
+            // Ensure promotion piece is lowercase if provided
             const playerMoveUCI = fromAlg + toAlg + (promotionPiece ? promotionPiece.toLowerCase() : '');
-
+        
             if (currentSolutionMoveIndex >= currentPuzzle.solution.length) {
-                console.error("Error: Trying to make player move but solution index is out of bounds.");
+                console.error(`[Puzzle ${currentPuzzle.id}] Error: Trying to make player move but solution index (${currentSolutionMoveIndex}) is out of bounds (max ${currentPuzzle.solution.length - 1}).`);
+                // Consider stopping the puzzle or triggering an error state
+                PUZZLE.stopPuzzle();
+                if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Internal puzzle error: solution index invalid.");
                 return 'error';
             }
-            const expectedSolutionMoveUCI = currentPuzzle.solution[currentSolutionMoveIndex];
-
-            console.log(`Player attempts: ${playerMoveUCI}, Expecting: ${expectedSolutionMoveUCI}`);
-
-            if (playerMoveUCI.toLowerCase() !== expectedSolutionMoveUCI.toLowerCase()) {
-                console.log("Incorrect move.");
+            // Compare lowercase UCI strings for robustness
+            const expectedSolutionMoveUCI = currentPuzzle.solution[currentSolutionMoveIndex].toLowerCase();
+        
+            console.log(`[Puzzle ${currentPuzzle.id}] Player attempts: ${playerMoveUCI}, Expecting: ${expectedSolutionMoveUCI}`);
+        
+            if (playerMoveUCI.toLowerCase() !== expectedSolutionMoveUCI) {
+                console.log(`[Puzzle ${currentPuzzle.id}] Incorrect move.`);
                 if (onIncorrectMoveCallback) {
-                    onIncorrectMoveCallback(fromAlg, toAlg);
+                    onIncorrectMoveCallback(fromAlg, toAlg); // Trigger callback for incorrect move
                 }
-                return 'incorrect';
+                return 'incorrect'; // Return specific code for incorrect
             }
-
-            const moveObject = _uciToMoveObject(playerMoveUCI);
+        
+            // --- Move is Correct ---
+            const moveObject = _uciToMoveObject(playerMoveUCI); // Use the validated playerMoveUCI
             if (!moveObject) {
-                console.error("Internal error: Failed to parse player move UCI:", playerMoveUCI);
+                console.error(`[Puzzle ${currentPuzzle.id}] Internal error: Failed to parse correct player move UCI: ${playerMoveUCI}`);
+                PUZZLE.stopPuzzle();
+                if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Internal puzzle error: cannot parse move.");
+                return 'error';
+            }
+        
+            let moveResult = null;
+            try {
+                moveResult = puzzleGame.move(moveObject); // Execute the move in the puzzle's game instance
+            } catch (e) {
+                console.error(`[Puzzle ${currentPuzzle.id}] Error executing validated player move ${playerMoveUCI} on board FEN ${puzzleGame?.fen()}:`, e);
+                moveResult = null; // Ensure moveResult is null on error
+            }
+        
+            if (moveResult === null) {
+                // This should ideally not happen if the puzzle data is correct and move was validated
+                console.error(`[Puzzle ${currentPuzzle.id}] Critical Error: Correct solution move ${playerMoveUCI} was illegal on board FEN: ${puzzleGame?.fen()}. Puzzle data likely flawed.`);
+                // Stop the puzzle and signal an error
+                PUZZLE.stopPuzzle();
+                if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Internal puzzle error: correct move was illegal.");
+                // We might still call incorrect callback here as the player effectively can't proceed
                 if (onIncorrectMoveCallback) onIncorrectMoveCallback(fromAlg, toAlg);
                 return 'error';
             }
-
-            let moveResult = null;
-            try {
-                const gameInstance = puzzleGame;
-                if (!gameInstance) throw new Error("puzzleGame is null");
-                moveResult = gameInstance.move(moveObject);
-            } catch (e) {
-                console.error(`Error executing player move ${playerMoveUCI} on board:`, e);
-                moveResult = null;
-            }
-
-            if (moveResult === null) {
-                console.error(`Puzzle Error: Solution move ${playerMoveUCI} became illegal on board FEN: ${puzzleGame?.fen()} for puzzle ${currentPuzzle.id}`);
-                if (onIncorrectMoveCallback) {
-                    onIncorrectMoveCallback(fromAlg, toAlg);
-                }
-                PUZZLE.stopPuzzle();
-                if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Internal puzzle error: illegal move found.");
-                return 'error';
-            }
-
-            console.log("Correct move made by player:", moveResult.san);
+        
+            // --- Move Execution Successful ---
+            console.log(`[Puzzle ${currentPuzzle.id}] Correct move made by player: ${moveResult.san}`);
             currentSolutionMoveIndex++;
-            isPlayerTurnInPuzzle = false;
-
+            isPlayerTurnInPuzzle = false; // Turn passes to opponent (or puzzle ends)
+        
+            // Trigger the callback for correct move UI updates (e.g., sound, highlight)
             if (onCorrectMoveCallback) {
                 onCorrectMoveCallback(moveResult);
             }
-
+        
+            // Check if puzzle is now complete
             if (currentSolutionMoveIndex >= currentPuzzle.solution.length) {
-                console.log(`Puzzle ${currentPuzzle.id} Complete!`);
+                console.log(`[Puzzle ${currentPuzzle.id}] Complete!`);
                 if (onPuzzleCompleteCallback) {
-                    onPuzzleCompleteCallback(currentPuzzle.id);
+                    onPuzzleCompleteCallback(currentPuzzle.id); // Trigger completion callback
                 }
-                isPlayerTurnInPuzzle = false;
-                return 'complete';
+                isPlayerTurnInPuzzle = false; // Ensure turn stays off
+                return 'complete'; // Return specific code for complete
             } else {
-                console.log("Scheduling opponent move...");
+                // Puzzle continues, schedule opponent move
+                console.log(`[Puzzle ${currentPuzzle.id}] Scheduling opponent move #${currentSolutionMoveIndex}...`);
+                // Use a reference to the puzzle ID when scheduling to prevent race conditions if a new puzzle is loaded quickly
+                const activePuzzleId = currentPuzzle.id;
                 setTimeout(() => {
-                    const activePuzzleId = currentPuzzle ? currentPuzzle.id : null;
-                    if (activePuzzleId && !isPlayerTurnInPuzzle && currentSolutionMoveIndex < currentPuzzle?.solution?.length) {
+                    // Check if we are still on the same puzzle and it's opponent's turn
+                    if (currentPuzzle && currentPuzzle.id === activePuzzleId && !isPlayerTurnInPuzzle && currentSolutionMoveIndex < currentPuzzle?.solution?.length) {
                         PUZZLE.makeOpponentMove(activePuzzleId);
                     } else {
-                        console.log("Skipping scheduled opponent move - puzzle state changed.");
+                         console.log(`[Puzzle ${activePuzzleId}] Skipped scheduled opponent move - puzzle state changed (Current: ${currentPuzzle?.id}, Turn: ${isPlayerTurnInPuzzle}, Index: ${currentSolutionMoveIndex}).`);
                     }
-                }, 500);
-                return 'correct_continue';
+                }, 500); // Delay for opponent move
+                return 'correct_continue'; // Return specific code for correct move, expecting opponent
             }
         },
 
         makeOpponentMove: (puzzleIdCheck) => {
-            if (!currentPuzzle || currentPuzzle.id !== puzzleIdCheck || !puzzleGame || isPlayerTurnInPuzzle || currentSolutionMoveIndex >= currentPuzzle.solution.length) {
-                console.warn("Opponent move skipped: Conditions not met (puzzle changed, not opponent's turn, puzzle complete, or no active puzzle). Current Puzzle ID:", currentPuzzle?.id, "Expected:", puzzleIdCheck);
+            // --- Pre-conditions Check ---
+            if (!currentPuzzle) {
+                console.warn("Opponent move skipped: No active puzzle.");
                 return false;
             }
-
+            if (currentPuzzle.id !== puzzleIdCheck) {
+                console.warn(`Opponent move skipped: Puzzle ID changed (expected ${puzzleIdCheck}, current ${currentPuzzle.id}).`);
+                return false;
+            }
+            if (isPlayerTurnInPuzzle) {
+                console.warn(`[Puzzle ${currentPuzzle.id}] Opponent move skipped: It is currently the player's turn.`);
+                return false;
+            }
+            if (!puzzleGame) {
+                 console.error(`[Puzzle ${currentPuzzle.id}] Opponent move failed: puzzleGame instance is null.`);
+                 PUZZLE.stopPuzzle();
+                 if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Internal puzzle error: game instance missing.");
+                 return false;
+            }
+             if (currentSolutionMoveIndex >= currentPuzzle.solution.length) {
+                 console.warn(`[Puzzle ${currentPuzzle.id}] Opponent move skipped: Solution index (${currentSolutionMoveIndex}) indicates puzzle should be complete.`);
+                 // Might happen due to race condition, ensure state is correct
+                 if (onPuzzleCompleteCallback) onPuzzleCompleteCallback(currentPuzzle.id);
+                 isPlayerTurnInPuzzle = false; // Ensure turn stays off
+                 return false;
+             }
+        
+            // --- Get and Validate Move ---
             const opponentMoveUCI = currentPuzzle.solution[currentSolutionMoveIndex];
             const moveObject = _uciToMoveObject(opponentMoveUCI);
-
+        
             if (!moveObject) {
-                console.error(`Internal error: Failed to parse opponent move UCI: ${opponentMoveUCI} for puzzle ${currentPuzzle.id}`);
-                currentPuzzle = null;
+                console.error(`[Puzzle ${currentPuzzle.id}] Internal error: Failed to parse opponent move UCI: ${opponentMoveUCI}`);
+                PUZZLE.stopPuzzle();
                 if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Error processing opponent move.");
                 return false;
             }
-
+        
+            // --- Execute Move ---
             let moveResult = null;
             try {
-                const gameInstance = puzzleGame;
-                if (!gameInstance) throw new Error("puzzleGame is null during opponent move");
-                moveResult = gameInstance.move(moveObject);
-
-                if (moveResult === null) {
-                    console.error(`Puzzle Error: Opponent solution move ${opponentMoveUCI} is illegal on board FEN: ${puzzleGame?.fen()} for puzzle ${currentPuzzle.id}`);
-                    isPlayerTurnInPuzzle = false;
-                    currentPuzzle = null;
-                    if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Puzzle data error: illegal opponent move.");
-                    return false;
-                }
-
-                console.log("Opponent move made:", moveResult.san);
-                currentSolutionMoveIndex++;
-                isPlayerTurnInPuzzle = true;
-
-                if (onOpponentMoveCallback) {
-                    onOpponentMoveCallback(moveResult);
-                }
-
-                if (currentSolutionMoveIndex >= currentPuzzle.solution.length) {
-                    console.log(`Puzzle ${currentPuzzle.id} Complete! (after opponent move)`);
-                    if (onPuzzleCompleteCallback) {
-                        onPuzzleCompleteCallback(currentPuzzle.id);
-                    }
-                    isPlayerTurnInPuzzle = false;
-                }
-
-                return true;
-
+                moveResult = puzzleGame.move(moveObject); // Execute opponent's move
             } catch (e) {
-                console.error(`Error executing opponent move ${opponentMoveUCI} for puzzle ${currentPuzzle.id}:`, e);
-                isPlayerTurnInPuzzle = false;
-                currentPuzzle = null;
-                if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Internal error during opponent move.");
+                console.error(`[Puzzle ${currentPuzzle.id}] Error executing opponent move ${opponentMoveUCI} on board FEN ${puzzleGame?.fen()}:`, e);
+                moveResult = null; // Ensure null on error
+            }
+        
+            if (moveResult === null) {
+                console.error(`[Puzzle ${currentPuzzle.id}] Critical Error: Opponent solution move ${opponentMoveUCI} was illegal on board FEN: ${puzzleGame?.fen()}. Puzzle data likely flawed.`);
+                PUZZLE.stopPuzzle();
+                if (onPuzzleLoadErrorCallback) onPuzzleLoadErrorCallback("Puzzle data error: illegal opponent move.");
+                isPlayerTurnInPuzzle = false; // Keep turn off
                 return false;
             }
+        
+            // --- Move Execution Successful ---
+            console.log(`[Puzzle ${currentPuzzle.id}] Opponent move #${currentSolutionMoveIndex} (${moveResult.san}) made.`);
+            currentSolutionMoveIndex++;
+            isPlayerTurnInPuzzle = true; // Turn passes back to player
+        
+            // Trigger callback for UI update (sound, highlight)
+            if (onOpponentMoveCallback) {
+                onOpponentMoveCallback(moveResult);
+            }
+        
+            // Check if the puzzle is now complete (opponent made the last move)
+            if (currentSolutionMoveIndex >= currentPuzzle.solution.length) {
+                console.log(`[Puzzle ${currentPuzzle.id}] Complete! (after opponent move)`);
+                if (onPuzzleCompleteCallback) {
+                    onPuzzleCompleteCallback(currentPuzzle.id); // Trigger completion callback
+                }
+                isPlayerTurnInPuzzle = false; // Turn doesn't pass back if puzzle is over
+            } else {
+                 console.log(`[Puzzle ${currentPuzzle.id}] Turn passes back to player.`);
+            }
+        
+            return true;
         },
 
         getHint: () => {
