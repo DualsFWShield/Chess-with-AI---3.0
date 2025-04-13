@@ -44,6 +44,7 @@ let capturedWhite = []; // Store piece chars ('P', 'N', etc.) captured BY BLACK
 let capturedBlack = []; // Store piece chars ('p', 'n', etc.) captured BY WHITE
 let promotionCallback = null; // Stores the callback for promotion choice
 let isReviewing = false; // Flag for game review state
+let autoFlipEnabled = true; // Default to auto-flipping in H vs H mode
 
 // --- Statistics & Ratings ---
 let gamesPlayed = 0, wins = 0, losses = 0, draws = 0;
@@ -165,6 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
         aiDelayToggle.innerHTML = `<i class="fas fa-clock"></i> ${aiDelayEnabled ? 'ON' : 'OFF'}`; // Initial state with icon
     } else console.warn("Bouton 'ai-delay-toggle' non trouvé.");
 
+    if (flipBoardToggle) {
+        flipBoardToggle.addEventListener('click', toggleAutoFlip);
+        updateFlipButtonVisualState(); // Set initial visual state
+    } else console.warn("Button 'flip-board-toggle' not found.");
+
     // Hide game layout initially
     if (gameLayoutEl) gameLayoutEl.style.display = 'none';
     if (statsContainerEl) statsContainerEl.style.display = 'none';
@@ -277,6 +283,28 @@ function setupMenusAndButtons() {
 
     // Promotion Modal Setup (Assuming HTML structure exists)
     setupPromotionModal();
+}
+
+function toggleAutoFlip() {
+    autoFlipEnabled = !autoFlipEnabled;
+    console.log(`Auto-flip board set to: ${autoFlipEnabled}`);
+    localStorage.setItem('chess-auto-flip', autoFlipEnabled ? 'on' : 'off');
+    updateFlipButtonVisualState();
+    playSound('click');
+
+    // Redraw the board immediately if in a human vs human game
+    if (gameMode === 'human' && !isGameOver && !isReviewing) {
+        createBoard(); // Redraw with the current player's perspective based on the new setting
+    }
+}
+
+function updateFlipButtonVisualState() {
+    if (!flipBoardToggle) return;
+    // Example: Add/remove an 'active' class or change icon opacity/color
+    flipBoardToggle.classList.toggle('active', autoFlipEnabled);
+    // Or change the icon itself:
+    // const icon = flipBoardToggle.querySelector('i');
+    // if (icon) icon.className = autoFlipEnabled ? 'fas fa-sync-alt active' : 'fas fa-sync-alt';
 }
 
 // Helper to switch between menu/game screens
@@ -462,6 +490,11 @@ function loadSavedSettings() {
          playerRating = parseInt(savedRating, 10) || 1200;
      }
      // Could load gamesPlayed, wins etc. similarly
+
+    const flipSetting = localStorage.getItem('chess-auto-flip');
+    // Default to 'on' if not set or invalid
+    autoFlipEnabled = (flipSetting === 'off') ? false : true;
+    updateFlipButtonVisualState();
 }
 
 function togglePieceRenderMode() {
@@ -1305,10 +1338,22 @@ function showAIReaction(playerMoveSAN) {
 
 // --- User Interaction (Click Handler) ---
 function handleSquareClick(event) {
-    const square = event.currentTarget;
-    const row = parseInt(square.dataset.row);
-    const col = parseInt(square.dataset.col);
-    const clickedAlg = coordToAlg(row, col);
+    const square = event.target.closest('.square'); // Get the square element
+    if (!square) return; // Clicked outside a square?
+
+    const coord = square.getAttribute('data-coord'); // e.g. "2,3"
+    if (!coord) {
+        console.error('data-coord attribute is missing.');
+        return;
+    }
+    const parts = coord.split(',');
+    if (parts.length < 2) {
+        console.error('Invalid coordinate format:', coord);
+        return;
+    }
+    const row = parseInt(parts[0], 10);
+    const col = parseInt(parts[1], 10);
+    const clickedAlg = coordToAlg(row, col); // Define clickedAlg here
 
     // --- Puzzle Mode Logic ---
     if (gameMode === 'puzzle') {
@@ -1324,20 +1369,24 @@ function handleSquareClick(event) {
              selectedSquareAlg = null; // Deselect logically first
 
              // Visually deselect and clear highlights
-             const fromSquareEl = chessboard.querySelector(`.square[data-row="${algToCoord(fromAlg)[0]}"][data-col="${fromAlg[1]}"]`);
-             if (fromSquareEl) fromSquareEl.classList.remove('selected');
+             const fromCoord = algToCoord(fromAlg); // Get coords for querySelector
+             if (fromCoord) {
+                 const fromSquareEl = chessboard.querySelector(`.square[data-row="${fromCoord[0]}"][data-col="${fromCoord[1]}"]`);
+                 if (fromSquareEl) fromSquareEl.classList.remove('selected');
+             }
              highlightMoves([]);
 
              // Check for promotion (simplified: assume promotion if pawn reaches last rank)
              const piece = PUZZLE.getPuzzleInstance().get(fromAlg);
              const isPawn = piece && piece.type === 'p';
+             // Use the clicked row for last rank check
              const isLastRank = (piece.color === 'w' && row === 0) || (piece.color === 'b' && row === 7);
-             let promotion = null;
 
              if (isPawn && isLastRank) {
                  // Need to show promotion modal specific to puzzle
                  showPromotionModal(piece.color, (promoChoice) => {
                       if (promoChoice) {
+                          // Use clickedAlg as the destination
                           const result = PUZZLE.makePlayerMove(fromAlg, clickedAlg, promoChoice);
                           // Callbacks handle UI updates based on result ('correct_continue', 'complete', 'incorrect')
                       } else {
@@ -1347,6 +1396,7 @@ function handleSquareClick(event) {
                   });
              } else {
                  // Not a promotion, make the move directly
+                 // Use clickedAlg as the destination
                  const result = PUZZLE.makePlayerMove(fromAlg, clickedAlg, null);
                  // Callbacks handle UI updates
              }
@@ -1359,10 +1409,9 @@ function handleSquareClick(event) {
                  playSound('click');
                  selectedSquareAlg = clickedAlg;
                  square.classList.add('selected');
-                 // Get and highlight VALID moves for the puzzle context (might differ from full game)
-                 // For simplicity, let's use chess.js moves, puzzle logic will check correctness
-                  const moves = PUZZLE.getPuzzleInstance().moves({ square: clickedAlg, verbose: true });
-                  highlightMoves(moves);
+                 // Get and highlight VALID moves for the puzzle context
+                 const moves = PUZZLE.getPuzzleInstance().moves({ square: clickedAlg, verbose: true });
+                 highlightMoves(moves);
              } else {
                   // Clicked empty or opponent piece without selection - do nothing
              }
@@ -1380,10 +1429,10 @@ function handleSquareClick(event) {
 
      const pieceOnSquare = game.get(clickedAlg); // Use main game instance
 
-    // ... (rest of the original handleSquareClick logic for 'human' and 'ai' modes) ...
      if (selectedSquareAlg) {
         // --- Piece Already Selected --- (Main Game)
         const fromAlg = selectedSquareAlg;
+        const fromCoord = algToCoord(fromAlg); // Get coords for querySelector
 
         // Case 1: Clicked the same square again - Deselect
         if (clickedAlg === fromAlg) {
@@ -1400,8 +1449,10 @@ function handleSquareClick(event) {
 
          if (targetMove) {
             // --- Valid Move Target --- (Main Game)
-            const fromSquareEl = chessboard.querySelector(`.square[data-row="${algToCoord(fromAlg)[0]}"][data-col="${algToCoord[fromAlg][1]}"]`);
-            if(fromSquareEl) fromSquareEl.classList.remove('selected');
+            if (fromCoord) {
+                const fromSquareEl = chessboard.querySelector(`.square[data-row="${fromCoord[0]}"][data-col="${fromCoord[1]}"]`);
+                if(fromSquareEl) fromSquareEl.classList.remove('selected');
+            }
             highlightMoves([]);
 
              if (targetMove.flags.includes('p')) {
@@ -1427,8 +1478,10 @@ function handleSquareClick(event) {
             }
         } else {
             // Case 3: Clicked an invalid destination or another own piece (Main Game)
-            const oldSquareEl = chessboard.querySelector(`.square[data-row="${algToCoord(fromAlg)[0]}"][data-col="${algToCoord[fromAlg][1]}"]`);
-            if(oldSquareEl) oldSquareEl.classList.remove('selected');
+            if (fromCoord) {
+                const oldSquareEl = chessboard.querySelector(`.square[data-row="${fromCoord[0]}"][data-col="${fromCoord[1]}"]`);
+                if(oldSquareEl) oldSquareEl.classList.remove('selected');
+            }
 
             if (pieceOnSquare && pieceOnSquare.color === currentTurn) {
                 // Clicked another piece - switch selection
@@ -1455,37 +1508,47 @@ function handleSquareClick(event) {
 }
 
 // --- Rendering & UI Updates ---
-function createBoard(gameInstance = game, playerPovColor = 'w') { // Default to main game, white POV
+function createBoard(gameInstance = game, playerPovColor = 'w') { // Default POV is white
     if (!chessboard) return;
+
+    // Determine POV based on mode and setting
+    let finalPovColor = 'w'; // Default to white POV
+    if (gameMode === 'human' && autoFlipEnabled && !isGameOver && !isReviewing) {
+        finalPovColor = gameInstance.turn(); // Flip based on current turn in Human vs Human auto-flip mode
+    } else if (gameMode === 'puzzle') {
+        const puzzleInfo = PUZZLE.getCurrentPuzzleData();
+        if (puzzleInfo) finalPovColor = puzzleInfo.playerColor; // Use puzzle's player color POV
+    }
+    // For AI mode and AI vs AI, default 'w' is used
+
     chessboard.innerHTML = '';
     const boardFragment = document.createDocumentFragment();
-    const boardData = gameInstance.board(); // Use the provided game instance
-    const isFlipped = playerPovColor === 'b'; // Flip if player is black
+    const boardData = gameInstance.board();
+    const isFlipped = finalPovColor === 'b'; // Flip if POV is black
 
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
-            // Adjust index based on flip
+            // Adjust indices based on flip
             const rowIndex = isFlipped ? 7 - row : row;
             const colIndex = isFlipped ? 7 - col : col;
 
             const square = document.createElement('div');
             square.classList.add('square');
-            // Color based on *visual* row/col, not logical after flip
             square.classList.add((row + col) % 2 === 0 ? 'light' : 'dark');
             square.dataset.row = rowIndex; // Store logical row/col
             square.dataset.col = colIndex;
+            square.dataset.coord = `${rowIndex},${colIndex}`; // Combined coordinate attribute
             const alg = coordToAlg(rowIndex, colIndex);
 
-             // Add Rank/File labels (adjust for flip)
-            const showRank = isFlipped ? (col === 7) : (col === 0); // Rank on h or a file
-            const showFile = isFlipped ? (row === 0) : (row === 7); // File on 8th or 1st rank
-
+            // Add Rank/File labels (adjusted for flip)
+            const showRank = isFlipped ? (col === 7) : (col === 0); // Rank label on file h for flipped, on file a otherwise
+            const showFile = isFlipped ? (row === 0) : (row === 7); // File label on rank 1 for flipped, on rank 8 otherwise
             if (showRank || showFile) {
                 const label = document.createElement('span');
                 label.className = 'square-label';
                 let labelText = '';
                 if (showRank) labelText += `${8 - rowIndex}`; // Logical rank number
-                if (showFile) labelText += files[colIndex]; // Logical file letter
+                if (showFile) labelText += files[colIndex];    // Logical file letter
                 label.textContent = labelText;
                 square.appendChild(label);
             }
@@ -1495,63 +1558,60 @@ function createBoard(gameInstance = game, playerPovColor = 'w') { // Default to 
             if (pieceInfo) {
                 const myPieceFormat = chessjsPieceToMyFormat(pieceInfo);
                 if (pieceRenderMode === 'ascii') {
-                    // ... (ascii rendering as before) ...
-                     const pieceElement = document.createElement('span');
-                     pieceElement.className = 'piece';
-                     pieceElement.textContent = pieces[myPieceFormat];
-                     pieceElement.classList.add(pieceInfo.color === 'w' ? 'white-piece' : 'black-piece');
-                     square.appendChild(pieceElement);
+                    const pieceElement = document.createElement('span');
+                    pieceElement.className = 'piece';
+                    pieceElement.textContent = pieces[myPieceFormat];
+                    pieceElement.classList.add(pieceInfo.color === 'w' ? 'white-piece' : 'black-piece');
+                    square.appendChild(pieceElement);
                 } else {
-                    // ... (png rendering as before) ...
-                     const img = document.createElement('img');
-                     const colorPrefix = pieceInfo.color === 'w' ? 'w' : 'b';
-                     let pieceCode = pieceInfo.type;
-                     if (pieceCode === 'n') pieceCode = 'n';
-                     const filename = `${colorPrefix}${pieceCode}.png`;
-                     img.src = `pieces/${filename}`;
-                     img.alt = myPieceFormat;
-                     img.classList.add("piece");
-                     img.draggable = false;
-                     square.appendChild(img);
+                    const img = document.createElement('img');
+                    const colorPrefix = pieceInfo.color === 'w' ? 'w' : 'b';
+                    let pieceCode = pieceInfo.type;
+                    if (pieceCode === 'n') pieceCode = 'n';
+                    const filename = `${colorPrefix}${pieceCode}.png`;
+                    img.src = `pieces/${filename}`;
+                    img.alt = myPieceFormat;
+                    img.classList.add("piece");
+                    img.draggable = false;
+                    square.appendChild(img);
                 }
             }
 
-            // Add click listener
+            // Add click listener to handle user interaction
             square.addEventListener('click', handleSquareClick);
 
-             // Determine cursor based on active mode and turn
-             let isInteractable = false;
-             if (gameMode === 'puzzle') {
-                 const puzzleInfo = PUZZLE.getCurrentPuzzleData();
-                 isInteractable = puzzleInfo && puzzleInfo.isPlayerTurn;
-             } else { // AI or Human mode
-                const currentTurn = gameInstance.turn(); // Use the instance passed in
+            // Determine cursor based on active mode and turn
+            let isInteractable = false;
+            if (gameMode === 'puzzle') {
+                const puzzleInfo = PUZZLE.getCurrentPuzzleData();
+                isInteractable = puzzleInfo && puzzleInfo.isPlayerTurn;
+            } else { // For AI or Human mode
+                const currentTurn = gameInstance.turn();
                 isInteractable = !isGameOver && !isStockfishThinking && !isReviewing && !promotionCallback &&
                                  (gameMode === 'human' || (gameMode === 'ai' && currentTurn === 'w'));
-             }
-             square.style.cursor = isInteractable ? 'pointer' : 'default';
+            }
+            square.style.cursor = isInteractable ? 'pointer' : 'default';
 
-
-             // Re-apply highlights (use logical alg)
-             if (lastMoveHighlight && (alg === lastMoveHighlight.from || alg === lastMoveHighlight.to)) {
+            // Re-apply highlights if applicable
+            if (lastMoveHighlight && (alg === lastMoveHighlight.from || alg === lastMoveHighlight.to)) {
                 square.classList.add('last-move');
-             }
-             if (selectedSquareAlg === alg) {
-                 square.classList.add('selected');
-             }
+            }
+            if (selectedSquareAlg === alg) {
+                square.classList.add('selected');
+            }
 
             boardFragment.appendChild(square);
         }
     }
     chessboard.appendChild(boardFragment);
 
-    // Re-apply move highlights if selected (use logical alg)
+    // Re-apply move highlights if a square is selected
     if (selectedSquareAlg) {
         const moves = gameInstance.moves({ square: selectedSquareAlg, verbose: true });
-        highlightMoves(moves); // HighlightMoves uses algToCoord, which works with logical coords
+        highlightMoves(moves); // Uses algToCoord to handle logical coordinates
     }
 
-    checkAndUpdateKingStatus(gameInstance); // Check status on the current board
+    checkAndUpdateKingStatus(gameInstance); // Update king's status (e.g., in-check highlight) on the current board
 }
 
 function highlightMoves(moves) { // Expects array of chess.js move objects [{ from:'e2', to:'e4', flags:'b', piece:'p', san:'e4' }, ...]
@@ -1903,7 +1963,7 @@ function updateRatingDisplay() {
         const puzzleInfo = PUZZLE.getCurrentPuzzleData();
         if (puzzleInfo) {
              p1Name = puzzleInfo.playerColor === 'w' ? "Joueur" : "Puzzle";
-             p1Elo = `(${puzzleInfo.rating || '????'})`;
+             p1Elo = `(${puzzleInfo.rating || '????'})`; // Show puzzle rating
              p2Name = puzzleInfo.playerColor === 'b' ? "Joueur" : "Puzzle";
              p2Elo = `(ID: ${puzzleInfo.id || 'N/A'})`; // Show ID for black in puzzle mode?
         } else {
@@ -2211,7 +2271,11 @@ function handlePuzzleIncorrectMove() {
     updateGameStatus("Mauvais coup. Réessayez !");
     // Deselect piece visually if one was selected
     if (selectedSquareAlg) {
-        deselectSquare(selectedSquareAlg); // Use helper if available
+        const selCoord = algToCoord(selectedSquareAlg);
+        if (selCoord) {
+            const squareEl = chessboard.querySelector(`.square[data-row="${selCoord[0]}"][data-col="${selCoord[1]}"]`);
+            if (squareEl) squareEl.classList.remove('selected');
+        }
         highlightMoves([]); // Clear highlights
         selectedSquareAlg = null;
     }
