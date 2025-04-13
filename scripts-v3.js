@@ -138,9 +138,12 @@ function getSoundPath(name) {
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Cache essential elements early
+    const flipBoardToggle = document.getElementById('flip-board-toggle'); // Cache here
+
     initStockfish();
     setupMenusAndButtons();
-    loadSavedSettings();
+    loadSavedSettings(); // Now flipBoardToggle exists when this calls updateFlipButtonVisualState
     updateStatistics(); // Load potentially saved stats
     updateRatingDisplay(); // Initial display based on defaults
     preloadAllSounds();
@@ -166,9 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
         aiDelayToggle.innerHTML = `<i class="fas fa-clock"></i> ${aiDelayEnabled ? 'ON' : 'OFF'}`; // Initial state with icon
     } else console.warn("Bouton 'ai-delay-toggle' non trouvé.");
 
+    // Event listener setup for flipBoardToggle (no need to re-assign here)
     if (flipBoardToggle) {
         flipBoardToggle.addEventListener('click', toggleAutoFlip);
-        updateFlipButtonVisualState(); // Set initial visual state
+        // updateFlipButtonVisualState(); // This is called within loadSavedSettings now
     } else console.warn("Button 'flip-board-toggle' not found.");
 
     // Hide game layout initially
@@ -194,7 +198,11 @@ function setupMenusAndButtons() {
     const analysisButton = document.getElementById('mode-analysis-board');
     if (analysisButton) {
         analysisButton.addEventListener('click', () => {
-            // Navigate directly to the review page (analysis board)
+            // Reset the main game state before navigating
+            returnToMainMenu();
+            // Clear any previously saved game intended for review
+            localStorage.removeItem('reviewGamePGN');
+            // Navigate to the review page (analysis board)
             window.location.href = 'review.html';
         });
     } else {
@@ -299,6 +307,7 @@ function toggleAutoFlip() {
 }
 
 function updateFlipButtonVisualState() {
+    const flipBoardToggle = document.getElementById('flip-board-toggle'); // Re-get element or ensure it's passed/available globally
     if (!flipBoardToggle) return;
     // Example: Add/remove an 'active' class or change icon opacity/color
     flipBoardToggle.classList.toggle('active', autoFlipEnabled);

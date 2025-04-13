@@ -17,12 +17,19 @@ DFWS Chess est un jeu d'échecs premium avec thème clair/sombre, développé av
 - **Modes de jeu** :
     - Jouer contre une IA avec des niveaux de difficulté ajustables
     - Jouer contre un autre humain sur le même appareil
+    - Mode IA vs IA pour observer des parties simulées
+    - Mode Puzzles pour résoudre des défis d'échecs
+    - Échiquier d'analyse pour expérimenter des positions
 - **Statistiques en temps réel** : Captures, mouvements et minuteries
 - **Historique des coups** : Consultez tous les mouvements joués
 - **Retours visuels améliorés** : Mise en surbrillance des mouvements possibles
 - **Sons immersifs** : Effets sonores pour les actions du jeu
 - **Notifications** : Système de toasts pour les événements importants
 - **Support multilingue** : Interface en français
+- **Puzzles d'échecs** : Résolvez des puzzles pour améliorer vos compétences
+- **Mode d'apprentissage** : Apprenez les bases et stratégies avancées des échecs
+- **Analyse en direct** : Obtenez des suggestions et des scores en temps réel dans le mode d'analyse
+- **Graphique de précision** : Visualisez la précision des coups joués
 
 ## Comment jouer
 
@@ -45,10 +52,14 @@ cd chess-with-ai
 
 ```
 ├── index.html          # Interface principale
-├── styles.css         # Styles et thèmes
-├── scripts-v2.js      # Logique du jeu
-├── assets/           # Ressources
-└── README.md         # Documentation
+├── styles-v2.css       # Styles et thèmes
+├── scripts-v3.js       # Logique du jeu
+├── puzzles.json        # Puzzles d'échecs
+├── learn.js            # Mode d'apprentissage
+├── assets/             # Ressources
+├── pieces/             # Images des pièces
+├── sounds/             # Effets sonores
+└── README.md           # Documentation
 ```
 
 ## Diagramme de flux
@@ -59,11 +70,14 @@ flowchart TD
         B --> C{Sélection mode}
         C -->|IA| D[Mode IA]
         C -->|Humain| E[Mode 2 joueurs]
-        D & E --> F[Initialisation jeu]
-        F --> G[Tour joueur]
-        G --> H{Fin partie?}
-        H -->|Non| G
-        H -->|Oui| I[Fin]
+        C -->|IA vs IA| F[Mode IA vs IA]
+        C -->|Puzzles| G[Mode Puzzles]
+        C -->|Analyse| H[Échiquier d'Analyse]
+        D & E & F & G & H --> I[Initialisation jeu]
+        I --> J[Tour joueur]
+        J --> K{Fin partie?}
+        K -->|Non| J
+        K -->|Oui| L[Fin]
 ```
 
 ## Crédits
