@@ -1020,17 +1020,17 @@ function handleStockfishMessage(event) {
     } else if (message === 'readyok') {
         isStockfishReady = true;
         console.log("Stockfish ready.");
-         showToast("Moteur IA prêt.", 'fa-check-circle', 1500);
+        showToast("Moteur IA prêt.", 'fa-check-circle', 1500);
         // If game started while stockfish was loading, and it's AI's turn, make move.
         if (!isGameOver && !isStockfishThinking && !isReviewing) {
             const currentTurn = game.turn();
-             if (gameMode === 'ai' && currentTurn === 'b') {
-                 console.log("Stockfish ready, requesting AI move for Black.");
-                 requestAiMove();
-             } else if (gameMode === 'ai-vs-ai' && (currentTurn === 'w' || currentTurn === 'b')) {
-                  console.log(`Stockfish ready, requesting AI move for ${currentTurn === 'w' ? 'White' : 'Black'}.`);
-                 requestAiMove();
-             }
+            if (gameMode === 'ai' && currentTurn === 'b') {
+                console.log("Stockfish ready, requesting AI move for Black.");
+                requestAiMove();
+            } else if (gameMode === 'ai-vs-ai' && (currentTurn === 'w' || currentTurn === 'b')) {
+                console.log(`Stockfish ready, requesting AI move for ${currentTurn === 'w' ? 'White' : 'Black'}.`);
+                requestAiMove();
+            }
         }
     } else if (message.startsWith('bestmove')) {
         if (!isStockfishThinking) {
@@ -1046,19 +1046,45 @@ function handleStockfishMessage(event) {
         if (bestmoveUCI && bestmoveUCI !== '(none)' && bestmoveUCI !== '0000') {
             handleAiMoveResponse(bestmoveUCI);
         } else {
-             console.error("Stockfish returned no valid move or '(none)'. FEN:", game.fen());
-             updateGameStatus(`Erreur IA (${game.turn() === 'w' ? 'Blanc' : 'Noir'}) : aucun coup valide.`);
-             // Decide what to do - maybe declare draw in AI vs AI?
-             if (gameMode === 'ai-vs-ai') {
-                 endGame('draw', 'erreur IA');
-             } else {
-                 // In Player vs AI, maybe let player win? Or just stop?
-                  // For now, just log error and stop. Player needs to decide?
-             }
+            console.error("Stockfish returned no valid move or '(none)'. FEN:", game.fen());
+            updateGameStatus(`Erreur IA (${game.turn() === 'w' ? 'Blanc' : 'Noir'}) : aucun coup valide.`);
+            // Decide what to do - maybe declare draw in AI vs AI?
+            if (gameMode === 'ai-vs-ai') {
+                endGame('draw', 'erreur IA');
+            } else {
+                // In Player vs AI, maybe let player win? Or just stop?
+                // For now, just log error and stop. Player needs to decide?
+            }
         }
     } else if (message.startsWith('info') && isReviewing) {
-         // TODO: Parse 'info depth ... score cp ... pv ...' messages during review
-         // console.log("Review Info:", message);
+        // Parse 'info' messages during review analysis
+        const tokens = message.split(' ');
+        const infoData = {};
+        for (let i = 0; i < tokens.length; i++) {
+            switch (tokens[i]) {
+                case "depth":
+                    infoData.depth = tokens[i + 1];
+                    i++;
+                    break;
+                case "score":
+                    if (tokens[i + 1] === "cp") {
+                        infoData.scoreCp = tokens[i + 2];
+                        i += 2;
+                    } else if (tokens[i + 1] === "mate") {
+                        infoData.scoreMate = tokens[i + 2];
+                        i += 2;
+                    }
+                    break;
+                case "pv":
+                    infoData.pv = tokens.slice(i + 1).join(' ');
+                    i = tokens.length; // Exit loop as pv is the rest of the message
+                    break;
+                default:
+                    break;
+            }
+        }
+        console.log("Review Info:", infoData);
+        // Optionally, update the review UI with infoData here.
     }
 }
 

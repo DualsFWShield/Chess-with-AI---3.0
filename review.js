@@ -30,6 +30,7 @@ const filterPlayedEl = document.getElementById('filter-played');
 const filterBestEl = document.getElementById('filter-best');
 const filterPvEl = document.getElementById('filter-pv');
 const filterThreatsEl = document.getElementById('filter-threats');
+const filterMatEl = document.getElementById('filter-mat'); // Added
 
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const pieceRenderMode = localStorage.getItem('chess-render-mode') || 'png';
@@ -70,13 +71,15 @@ const ARROW_COLORS = {
     played: 'rgba(60, 100, 180, 0.75)', // Blueish
     best: 'rgba(40, 160, 40, 0.85)',     // Green
     pv: ['rgba(255, 165, 0, 0.7)', 'rgba(255, 140, 0, 0.6)', 'rgba(255, 115, 0, 0.5)'], // Oranges
-    threat: 'rgba(200, 40, 40, 0.6)'      // Red for capture indication
+    threat: 'rgba(200, 40, 40, 0.6)',      // Red for capture indication
+    mate: ['rgba(180, 0, 180, 0.8)', 'rgba(160, 0, 160, 0.7)', 'rgba(140, 0, 140, 0.6)', 'rgba(120, 0, 120, 0.5)'] // Purples for mate sequence
 };
 const ARROW_THICKNESS = {
     played: 5,
     best: 7, // Thicker best move arrow
     pv: [5, 4, 3], // Decreasing thickness for PV
-    threat: 5 // Thickness for capture arrows
+    threat: 5, // Thickness for capture arrows
+    mate: [8, 7, 6, 5] // Decreasing thickness for mate sequence
 };
 
 // Interactive Play Globals
@@ -86,10 +89,17 @@ let promotionCallback_Review = null; // Callback for interactive promotion
 // --- Helper Functions (Defined Early) ---
 
 function algToPixel(alg) {
-    if (!boardRect || squareSize <= 0 || !alg || alg.length < 2) return null;
+    // Ensure boardRect and squareSize are valid before calculation
+    if (!boardRect || squareSize <= 0 || !alg || alg.length < 2) {
+        // console.warn(`algToPixel: Invalid input or board state. alg=${alg}, squareSize=${squareSize}`);
+        return null;
+    }
     const col = files.indexOf(alg[0]);
     const row = 8 - parseInt(alg[1]);
-    if (col === -1 || isNaN(row) || row < 0 || row > 7) return null;
+    if (col === -1 || isNaN(row) || row < 0 || row > 7) {
+        // console.warn(`algToPixel: Invalid alg conversion. alg=${alg}`);
+        return null;
+    }
     // Center of the square
     const x = col * squareSize + squareSize / 2;
     const y = row * squareSize + squareSize / 2;
@@ -135,6 +145,7 @@ function highlightSquare(alg, color = 'rgba(255, 0, 0, 0.3)', radius = squareSiz
 }
 
 function drawArrow(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = null, thickness = 6) {
+    // Add validation for board state and coordinates
     if (!overlaySvg || !boardRect || squareSize <= 0) return;
     const start = algToPixel(fromAlg);
     const end = algToPixel(toAlg);
@@ -152,12 +163,13 @@ function drawArrow(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = null, thic
         marker = document.createElementNS(svgNs, 'marker');
         marker.setAttribute('id', arrowId);
         marker.setAttribute('viewBox', '0 0 10 10');
-        marker.setAttribute('refX', '8'); // Position arrow tip slightly before end of line
+        // Adjust refX to position arrowhead closer to the line end
+        marker.setAttribute('refX', '9'); // Changed from 8
         marker.setAttribute('refY', '5');
         marker.setAttribute('markerUnits', 'strokeWidth');
         marker.setAttribute('markerWidth', thickness * 0.8); // Make arrowhead proportional to thickness
         marker.setAttribute('markerHeight', thickness * 0.8);
-        marker.setAttribute('orient', 'auto-start-reverse'); // Changed to auto-start-reverse
+        marker.setAttribute('orient', 'auto-start-reverse'); // Keep this orientation
 
         const path = document.createElementNS(svgNs, 'path');
         path.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z'); // Triangle shape
@@ -179,7 +191,9 @@ function drawArrow(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = null, thic
     line.setAttribute('x1', start.x);
     line.setAttribute('y1', start.y);
     line.setAttribute('x2', end.x);
-    line.setAttribute('y2', end.y);
+    // Adjust end point slightly to account for arrowhead marker if needed (optional)
+    // Example: Calculate vector and shorten line slightly - complex, try adjusting refX first.
+    line.setAttribute('y2', end.y); // Keep original end point for now
     line.setAttribute('stroke', color);
     line.setAttribute('stroke-width', thickness);
     line.setAttribute('stroke-linecap', 'round');
@@ -189,11 +203,12 @@ function drawArrow(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = null, thic
 }
 
 function drawArrowWithNumber(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = null, thickness = 6, labelNumber = 1) {
+    // Add validation for board state and coordinates
     if (!overlaySvg || !boardRect || squareSize <= 0) return;
     const start = algToPixel(fromAlg);
     const end = algToPixel(toAlg);
     if (!start || !end) {
-        console.warn(`Cannot draw arrow, invalid coords: ${fromAlg} -> ${toAlg}`);
+        console.warn(`Cannot draw numbered arrow, invalid coords: ${fromAlg} -> ${toAlg}`);
         return;
     }
     const svgNs = "http://www.w3.org/2000/svg";
@@ -205,12 +220,13 @@ function drawArrowWithNumber(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = 
         marker = document.createElementNS(svgNs, 'marker');
         marker.setAttribute('id', arrowId);
         marker.setAttribute('viewBox', '0 0 10 10');
-        marker.setAttribute('refX', '8');
+        // Adjust refX to position arrowhead closer to the line end
+        marker.setAttribute('refX', '9'); // Changed from 8
         marker.setAttribute('refY', '5');
         marker.setAttribute('markerUnits', 'strokeWidth');
         marker.setAttribute('markerWidth', thickness * 0.8);
         marker.setAttribute('markerHeight', thickness * 0.8);
-        marker.setAttribute('orient', 'auto-start-reverse');
+        marker.setAttribute('orient', 'auto-start-reverse'); // Keep this orientation
         const path = document.createElementNS(svgNs, 'path');
         path.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
         path.setAttribute('fill', color);
@@ -227,7 +243,7 @@ function drawArrowWithNumber(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = 
     line.setAttribute('x1', start.x);
     line.setAttribute('y1', start.y);
     line.setAttribute('x2', end.x);
-    line.setAttribute('y2', end.y);
+    line.setAttribute('y2', end.y); // Keep original end point for now
     line.setAttribute('stroke', color);
     line.setAttribute('stroke-width', thickness);
     line.setAttribute('stroke-linecap', 'round');
@@ -236,11 +252,15 @@ function drawArrowWithNumber(fromAlg, toAlg, color = 'rgba(0, 0, 0, 0.5)', id = 
     // Compute midpoint for the number label
     const midX = (start.x + end.x) / 2;
     const midY = (start.y + end.y) / 2;
+    // Offset the number slightly perpendicular to the arrow direction (optional, complex)
     const text = document.createElementNS(svgNs, 'text');
     text.setAttribute('x', midX);
     text.setAttribute('y', midY);
-    text.setAttribute('fill', color);
+    text.setAttribute('fill', 'white'); // Use white for better contrast on colored arrows
+    text.setAttribute('stroke', 'black'); // Add a black outline
+    text.setAttribute('stroke-width', '0.5');
     text.setAttribute('font-size', thickness * 1.5);
+    text.setAttribute('font-weight', 'bold');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'central');
     text.textContent = labelNumber;
@@ -340,28 +360,48 @@ function getOverallAnalysisProgress() {
 
 function setupBoardOverlay() {
     if (!chessboardEl || !overlaySvg) return;
+
+    // Use getBoundingClientRect for more accurate dimensions and position relative to viewport
+    const rect = chessboardEl.getBoundingClientRect();
+    const parentRect = chessboardEl.offsetParent ? chessboardEl.offsetParent.getBoundingClientRect() : { top: 0, left: 0 };
+
+    // Calculate position relative to the offset parent, which is usually what absolute positioning uses
     boardRect = {
-        left: chessboardEl.offsetLeft,
-        top: chessboardEl.offsetTop,
-        width: chessboardEl.offsetWidth,
-        height: chessboardEl.offsetHeight
+        left: rect.left - parentRect.left,
+        top: rect.top - parentRect.top,
+        width: rect.width,
+        height: rect.height
     };
 
+    // Check for valid dimensions immediately after calculation
     if (boardRect.width <= 0 || boardRect.height <= 0) {
-        console.warn("Board rect has zero size, cannot calculate square size.");
-        setTimeout(setupBoardOverlay, 200);
+        console.warn("Board rect has zero or negative size, retrying overlay setup.", boardRect);
+        // Retry after a short delay to allow layout reflow
+        setTimeout(setupBoardOverlay, 250);
         return;
     }
 
     squareSize = boardRect.width / 8;
 
+    // Ensure squareSize is valid
+    if (squareSize <= 0) {
+         console.warn("Calculated square size is invalid, retrying overlay setup.", squareSize);
+         setTimeout(setupBoardOverlay, 250);
+         return;
+    }
+
     overlaySvg.setAttribute('viewBox', `0 0 ${boardRect.width} ${boardRect.height}`);
+    // Set SVG size explicitly
     overlaySvg.style.width = `${boardRect.width}px`;
     overlaySvg.style.height = `${boardRect.height}px`;
-    overlaySvg.style.left = `0px`;
-    overlaySvg.style.top = `0px`;
+    // Position SVG absolutely relative to its container (should be the chessboard div or similar)
+    overlaySvg.style.position = 'absolute'; // Ensure position is absolute
+    overlaySvg.style.left = `0px`; // Position relative to container
+    overlaySvg.style.top = `0px`;  // Position relative to container
+    overlaySvg.style.pointerEvents = 'none'; // Make sure it doesn't interfere with clicks
 
-    console.log(`Overlay setup: Size=${boardRect.width}x${boardRect.height}, SquareSize=${squareSize}`);
+    console.log(`Overlay setup: Size=${boardRect.width}x${boardRect.height}, SquareSize=${squareSize}, Pos=${boardRect.top},${boardRect.left}`);
+    // Update overlays immediately after setup
     updateBoardOverlays();
 }
 
@@ -369,57 +409,135 @@ function updateBoardOverlays() {
     if (!overlaySvg) return;
     clearOverlays();
 
-    const analysisIndex = currentMoveIndex + 1;
-    const currentAnalysis = moveAnalysisData[analysisIndex];
-    const previousAnalysis = (currentMoveIndex >= 0) ? moveAnalysisData[currentMoveIndex] : null;
-    const playedMove = (currentMoveIndex >= 0) ? fullGameHistory[currentMoveIndex] : null;
-
-    if (filterPlayedEl?.checked && playedMove) {
-        drawArrow(playedMove.from, playedMove.to, ARROW_COLORS.played, 'played', ARROW_THICKNESS.played);
+    // Ensure board dimensions are valid before drawing
+    if (!boardRect || squareSize <= 0) {
+        console.warn("updateBoardOverlays: Invalid board dimensions, skipping draw.");
+        return;
     }
 
+    const analysisIndex = currentMoveIndex + 1;
+    // Ensure analysisIndex is within bounds
+    if (analysisIndex < 0 || analysisIndex >= moveAnalysisData.length) {
+        // console.log("updateBoardOverlays: No analysis data for current index.");
+        return;
+    }
+    const currentAnalysis = moveAnalysisData[analysisIndex];
+    const previousAnalysis = (currentMoveIndex >= 0 && currentMoveIndex < moveAnalysisData.length) ? moveAnalysisData[currentMoveIndex] : null;
+    const playedMove = (currentMoveIndex >= 0 && currentMoveIndex < fullGameHistory.length) ? fullGameHistory[currentMoveIndex] : null;
+
+    // Filter: Played Move
+    if (filterPlayedEl?.checked && playedMove) {
+        // Validate move coordinates before drawing
+        if (algToPixel(playedMove.from) && algToPixel(playedMove.to)) {
+            drawArrow(playedMove.from, playedMove.to, ARROW_COLORS.played, 'played', ARROW_THICKNESS.played);
+        } else {
+            console.warn(`Skipping played move arrow: Invalid coords ${playedMove.from}->${playedMove.to}`);
+        }
+    }
+
+    // Filter: Best Move (from previous position's analysis)
     if (filterBestEl?.checked && previousAnalysis?.best_move_before) {
         const bestUci = previousAnalysis.best_move_before;
         if (bestUci && bestUci !== '(none)' && bestUci !== '0000') {
             const from = bestUci.substring(0, 2);
             const to = bestUci.substring(2, 4);
             const playedUci = playedMove ? playedMove.from + playedMove.to + (playedMove.promotion || '') : null;
-            if (bestUci !== playedUci) {
+            // Only draw if best move is different from played move and coords are valid
+            if (bestUci !== playedUci && algToPixel(from) && algToPixel(to)) {
                 drawArrow(from, to, ARROW_COLORS.best, 'best', ARROW_THICKNESS.best);
+            } else if (!algToPixel(from) || !algToPixel(to)) {
+                 console.warn(`Skipping best move arrow: Invalid coords ${from}->${to}`);
             }
         }
     }
 
+    // Filter: Principal Variation (from current position's analysis)
     if (filterPvEl?.checked && currentAnalysis?.pv && currentAnalysis.pv.length > 0) {
+        // Use a temporary board based on the *current* reviewGame state
         const tempGamePV = new Chess(reviewGame.fen());
         for (let i = 0; i < Math.min(currentAnalysis.pv.length, ARROW_COLORS.pv.length); i++) {
             const uciMove = currentAnalysis.pv[i];
             const from = uciMove.substring(0, 2);
             const to = uciMove.substring(2, 4);
+            // Validate coordinates before attempting move/draw
+            if (!algToPixel(from) || !algToPixel(to)) {
+                 console.warn(`Skipping PV arrow ${i}: Invalid coords ${from}->${to}`);
+                 break; // Stop drawing PV if coords are bad
+            }
+            // Attempt the move on the temporary board
             const moveResult = tempGamePV.move(uciMove, { sloppy: true });
             if (moveResult) {
+                // Draw arrow only if the move was legal on the temp board
                 drawArrow(from, to, ARROW_COLORS.pv[i], `pv-${i}`, ARROW_THICKNESS.pv[i]);
             } else {
+                // Stop drawing PV sequence if an illegal move is encountered
+                console.warn(`PV drawing stopped: Invalid move ${uciMove} at step ${i} from FEN ${reviewGame.fen()}`);
                 break;
             }
         }
     }
 
+    // Filter: Threats (Legal Captures from current position)
     if (filterThreatsEl?.checked) {
         const board = reviewGame.board();
+        let threatCounter = 0; // Counter for unique arrow IDs if needed
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const piece = board[r]?.[c];
-                if (piece) {
+                if (piece && piece.color === reviewGame.turn()) { // Only show threats for the current player
                     const fromAlg = files[c] + (8 - r);
+                    // Get only legal moves for the piece
                     const moves = reviewGame.moves({ square: fromAlg, verbose: true });
                     const captureMoves = moves.filter(m => m.captured);
+
                     if (captureMoves.length > 0) {
+                        // Highlight the attacking piece's square
                         highlightSquare(fromAlg, ARROW_COLORS.threat, squareSize * 0.25);
+                        // Draw arrows for each legal capture
                         captureMoves.slice(0, 4).forEach((move, index) => {
-                            drawArrowWithNumber(fromAlg, move.to, ARROW_COLORS.threat, `capture-${fromAlg}-${move.to}-${index}`, ARROW_THICKNESS.threat, index + 1);
+                            // Validate coordinates before drawing
+                            if (algToPixel(fromAlg) && algToPixel(move.to)) {
+                                drawArrowWithNumber(fromAlg, move.to, ARROW_COLORS.threat, `capture-${fromAlg}-${move.to}-${threatCounter++}`, ARROW_THICKNESS.threat, index + 1);
+                            } else {
+                                 console.warn(`Skipping threat arrow: Invalid coords ${fromAlg}->${move.to}`);
+                            }
                         });
                     }
+                }
+            }
+        }
+    }
+
+    // Filter: Mate Sequence (from current position's analysis)
+    if (filterMatEl?.checked && currentAnalysis?.eval_before && typeof currentAnalysis.eval_before === 'string' && currentAnalysis.eval_before.startsWith('M')) {
+        const mateIn = parseInt(currentAnalysis.eval_before.substring(1));
+        // Check if the mate is for the player whose turn it is
+        const isMateForCurrentPlayer = (reviewGame.turn() === 'w' && mateIn > 0) || (reviewGame.turn() === 'b' && mateIn < 0);
+
+        // Only draw if it's a mate for the current player, within reasonable length, and PV exists
+        if (isMateForCurrentPlayer && Math.abs(mateIn) <= ARROW_COLORS.mate.length && currentAnalysis.pv && currentAnalysis.pv.length >= Math.abs(mateIn)) {
+            // Use a temporary board based on the *current* reviewGame state
+            const tempGameMate = new Chess(reviewGame.fen());
+            for (let i = 0; i < Math.abs(mateIn); i++) {
+                const uciMove = currentAnalysis.pv[i];
+                const from = uciMove.substring(0, 2);
+                const to = uciMove.substring(2, 4);
+                 // Validate coordinates before attempting move/draw
+                if (!algToPixel(from) || !algToPixel(to)) {
+                    console.warn(`Skipping Mate arrow ${i}: Invalid coords ${from}->${to}`);
+                    break; // Stop drawing sequence if coords are bad
+                }
+                // Attempt the move on the temporary board
+                const moveResult = tempGameMate.move(uciMove, { sloppy: true });
+                if (moveResult) {
+                    // Draw arrow only if the move was legal on the temp board
+                    const colorIndex = Math.min(i, ARROW_COLORS.mate.length - 1);
+                    const thicknessIndex = Math.min(i, ARROW_THICKNESS.mate.length - 1);
+                    drawArrowWithNumber(from, to, ARROW_COLORS.mate[colorIndex], `mate-${i}`, ARROW_THICKNESS.mate[thicknessIndex], i + 1);
+                } else {
+                    // Stop drawing sequence if an illegal move is encountered
+                    console.warn(`Mate sequence drawing stopped: Invalid move ${uciMove} at step ${i} from FEN ${reviewGame.fen()}`);
+                    break;
                 }
             }
         }
@@ -523,7 +641,10 @@ function createBoard_Review() {
             }
         }
     } catch (e) { console.error("Error highlighting check:", e); }
-    setupBoardOverlay();
+
+    // Call setupBoardOverlay *after* the board is fully in the DOM and rendered.
+    // Using a small timeout can help ensure layout calculations are complete.
+    setTimeout(setupBoardOverlay, 50); // Increased timeout slightly
 
     if (selectedSquareAlg_Review) {
         const moves = reviewGame.moves({ square: selectedSquareAlg_Review, verbose: true });
@@ -803,23 +924,79 @@ function updateMoveListClassification(moveIndex, classificationText) {
 function updateGoodStrategyDisplay() {
     const strategyEl = document.getElementById('review-good-strategy');
     if (!strategyEl) return;
+    const strategySpan = strategyEl.querySelector('span');
+    if (!strategySpan) return; // Ensure the span exists
+
     let strategyText = "N/A";
-    if (currentMoveIndex >= 0) {
-        const analysisPrev = moveAnalysisData[currentMoveIndex];
-        if (analysisPrev?.pv && analysisPrev.pv.length > 0 && analysisPrev.pv.length <= 4) {
-            const tempGame = new Chess(analysisPrev.fen_after);
-            const movesSAN = [];
-            for (const moveUci of analysisPrev.pv) {
-                const moveObj = tempGame.move(moveUci, { sloppy: true });
-                if (!moveObj) break;
-                movesSAN.push(moveObj.san);
+    const MAX_MOVES_TO_SHOW = 5; // Limit the number of moves displayed
+
+    // Get analysis data for the current position (index = currentMoveIndex + 1)
+    // Ensure index is valid
+    const analysisIndex = currentMoveIndex + 1;
+    if (analysisIndex < 0 || analysisIndex >= moveAnalysisData.length) {
+        strategySpan.textContent = "N/A"; // Or "Analyse requise"
+        return;
+    }
+    const analysisCurrent = moveAnalysisData[analysisIndex];
+
+    if (analysisCurrent?.pv && analysisCurrent.pv.length > 0) {
+        // Use the FEN of the current board state to simulate the PV
+        const fenForPV = reviewGame.fen();
+        const tempGame = new Chess(fenForPV); // Create new instance for simulation
+        let mateFound = false;
+        const movesSAN = [];
+
+        // Iterate through the PV, respecting the MAX_MOVES_TO_SHOW limit
+        for (let i = 0; i < Math.min(analysisCurrent.pv.length, MAX_MOVES_TO_SHOW); i++) {
+            const moveUci = analysisCurrent.pv[i];
+            // Validate move format before attempting
+            if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(moveUci)) {
+                 console.warn(`Invalid UCI format in PV: ${moveUci}`);
+                 break;
             }
-            if (movesSAN.length > 0) {
-                strategyText = movesSAN.join(' - ');
+            const moveObj = tempGame.move(moveUci, { sloppy: true });
+
+            if (!moveObj) {
+                // Stop if an invalid move is encountered in the PV
+                console.warn(`Invalid move in PV: ${moveUci} at step ${i} from FEN ${fenForPV}`);
+                break; // Stop processing PV
+            }
+            movesSAN.push(moveObj.san);
+
+            // Check if the current move results in checkmate *after* the move is made
+            if (tempGame.in_checkmate()) {
+                mateFound = true;
+                // Add '#' to the last move SAN if it's checkmate
+                if (movesSAN.length > 0) {
+                    movesSAN[movesSAN.length - 1] += '#';
+                }
+                break; // Stop processing PV if mate is found
             }
         }
+        // ... (rest of the function remains the same) ...
+        // Format the strategy text based on findings
+        if (mateFound) {
+            strategyText = `Mat forcé: ${movesSAN.join(' ')}`;
+        } else if (movesSAN.length > 0) {
+            strategyText = movesSAN.join(' ');
+            // Indicate if the PV was longer than the display limit
+            if (analysisCurrent.pv.length > MAX_MOVES_TO_SHOW) {
+                strategyText += ' ...';
+            }
+        } else {
+            // Handle cases where PV exists but no valid moves could be processed
+             strategyText = "Ligne principale non calculable."; // More specific message
+        }
+    } else if (analysisCurrent && (analysisCurrent.pass1_complete || analysisCurrent.pass2_complete) && !analysisCurrent.pv) {
+         // If analysis is done but no PV (e.g., mate in 0 or error), indicate calculation status
+         strategyText = "Calcul...";
+    } else if (!analysisCurrent || (!analysisCurrent.pass1_complete && !analysisCurrent.pass2_complete)) {
+        // If analysis hasn't run or completed for this position
+        strategyText = "Analyse requise";
     }
-    strategyEl.querySelector('span').textContent = strategyText;
+
+
+    strategySpan.textContent = strategyText;
 }
 
 function updateAnalysisDisplayForCurrentMove() {
@@ -953,70 +1130,95 @@ function goToMove(index) {
 // --- Accuracy Calculation and Chart ---
 
 function calculateSingleMoveAccuracy(cpl) {
-    if (cpl === null || cpl === undefined) return null;
-    const loss = Math.max(0, cpl);
-    const accuracy = 100 * Math.exp(-loss / 350);
+    // Calculates accuracy percentage based on centipawn loss (CPL).
+    // Formula inspired by common practices, adjustable.
+    if (cpl === null || cpl === undefined || isNaN(cpl)) return null;
+    const loss = Math.max(0, cpl); // Accuracy doesn't increase for negative CPL
+    // Sigmoid-like function: 103.1668 * Math.exp(-0.04354 * loss) - 3.1668 (Chess.com approximation)
+    // Simpler exponential decay: 100 * Math.exp(-loss / X) where X controls sensitivity
+    const accuracy = 100 * Math.exp(-loss / 300); // Adjust 300 to tune sensitivity
     return Math.max(0, Math.min(100, accuracy));
 }
 
-function calculateAndDrawAccuracy() {
+function getEvaluationForPlotting(evaluation, turn) {
+    // Converts Stockfish eval (cp or mate) into a numerical value for plotting.
+    // Clamps extreme values for better visualization.
+    const MATE_SCORE = 1500; // Value to represent mate on the chart (in centipawns)
+    const MAX_CP = 1000;    // Max centipawn value to display (avoid huge spikes)
+
+    if (evaluation === null || evaluation === undefined) return null;
+
+    if (typeof evaluation === 'string' && evaluation.startsWith('M')) {
+        const mateIn = parseInt(evaluation.substring(1));
+        // Positive M means advantage for the side whose turn it ISN'T in the FEN
+        // But the chart usually shows advantage from White's perspective.
+        // Let's adjust based on whose move led to this eval.
+        // If eval is M5 (mate in 5 for white), score is +MATE_SCORE
+        // If eval is M-3 (mate in 3 for black), score is -MATE_SCORE
+        return mateIn > 0 ? MATE_SCORE : -MATE_SCORE;
+    } else if (typeof evaluation === 'number') {
+        // Clamp centipawn scores
+        return Math.max(-MAX_CP, Math.min(MAX_CP, evaluation * 100));
+    }
+    return null; // Invalid format
+}
+
+function updateAccuracyChartAndStats() {
     if (!accuracyChart) return;
 
-    accuracyData = { white: [], black: [], labels: [] };
+    const whiteAccuracyData = [];
+    const blackAccuracyData = [];
+    const chartLabels = [];
+
     let whiteTotalAccuracy = 0;
     let whiteMoveCount = 0;
     let blackTotalAccuracy = 0;
     let blackMoveCount = 0;
 
-    // Always calculate accuracy, even if no moves exist.
-    if (fullGameHistory.length === 0) {
-        // If there are no moves, show default initial values.
-        accuracyData.labels.push('0');
-        accuracyData.white.push(50);
-        accuracyData.black.push(50);
-        if (accuracyWhiteEl) accuracyWhiteEl.textContent = 'Blanc: 50.0%';
-        if (accuracyBlackEl) accuracyBlackEl.textContent = 'Noir: 50.0%';
-    } else {
-        for (let i = 0; i < fullGameHistory.length; i++) {
-            const move = fullGameHistory[i];
-            const analysis = moveAnalysisData[i + 1];
-            const moveNumber = Math.floor(i / 2) + 1;
-            const label = `${moveNumber}${move.color === 'w' ? '.' : '...'}`;
-            accuracyData.labels.push(label);
+    // Start from the first move (index 0 in fullGameHistory)
+    for (let i = 0; i < fullGameHistory.length; i++) {
+        const move = fullGameHistory[i];
+        const analysis = moveAnalysisData[i + 1]; // Analysis data corresponds to the state *after* the move
+        const moveNumber = Math.floor(i / 2) + 1;
+        const label = `${moveNumber}${move.color === 'w' ? '.' : '...'}`;
+        chartLabels.push(label);
 
-            const accuracy = calculateSingleMoveAccuracy(analysis?.cpl);
+        const moveAccuracy = calculateSingleMoveAccuracy(analysis?.cpl);
 
-            if (move.color === 'w') {
-                accuracyData.white.push(accuracy);
-                accuracyData.black.push(NaN);
-                if (accuracy !== null) {
-                    whiteTotalAccuracy += accuracy;
-                    whiteMoveCount++;
-                }
-            } else {
-                accuracyData.black.push(accuracy);
-                accuracyData.white.push(NaN);
-                if (accuracy !== null) {
-                    blackTotalAccuracy += accuracy;
-                    blackMoveCount++;
-                }
+        if (move.color === 'w') {
+            whiteAccuracyData.push(moveAccuracy);
+            blackAccuracyData.push(NaN); // Use NaN for the other player's turn
+            if (moveAccuracy !== null) {
+                whiteTotalAccuracy += moveAccuracy;
+                whiteMoveCount++;
+            }
+        } else { // Black's move
+            blackAccuracyData.push(moveAccuracy);
+            whiteAccuracyData.push(NaN); // Use NaN for the other player's turn
+            if (moveAccuracy !== null) {
+                blackTotalAccuracy += moveAccuracy;
+                blackMoveCount++;
             }
         }
     }
 
-    const avgWhiteAccuracy = whiteMoveCount > 0 ? (whiteTotalAccuracy / whiteMoveCount) : 50;
-    const avgBlackAccuracy = blackMoveCount > 0 ? (blackTotalAccuracy / blackMoveCount) : 50;
+    // Calculate average accuracies
+    const avgWhiteAccuracy = whiteMoveCount > 0 ? (whiteTotalAccuracy / whiteMoveCount) : null;
+    const avgBlackAccuracy = blackMoveCount > 0 ? (blackTotalAccuracy / blackMoveCount) : null;
 
-    if (accuracyWhiteEl) accuracyWhiteEl.textContent = `Blanc: ${avgWhiteAccuracy.toFixed(1)}%`;
-    if (accuracyBlackEl) accuracyBlackEl.textContent = `Noir: ${avgBlackAccuracy.toFixed(1)}%`;
+    if (accuracyWhiteEl) accuracyWhiteEl.textContent = `Blanc: ${avgWhiteAccuracy !== null ? avgWhiteAccuracy.toFixed(1) + '%' : 'N/A'}`;
+    if (accuracyBlackEl) accuracyBlackEl.textContent = `Noir: ${avgBlackAccuracy !== null ? avgBlackAccuracy.toFixed(1) + '%' : 'N/A'}`;
 
-    accuracyChart.data.labels = accuracyData.labels;
-    accuracyChart.data.datasets[0].data = accuracyData.white;
-    accuracyChart.data.datasets[1].data = accuracyData.black;
+    // Update chart data and refresh
+    accuracyChart.data.labels = chartLabels;
+    accuracyChart.data.datasets[0].data = whiteAccuracyData;
+    accuracyChart.data.datasets[1].data = blackAccuracyData;
+
     accuracyChart.update();
 
-    console.log(`Accuracy calculated: White Avg ${avgWhiteAccuracy.toFixed(1)}%, Black Avg ${avgBlackAccuracy.toFixed(1)}%`);
+    console.log(`Accuracy chart updated. White Avg ${avgWhiteAccuracy?.toFixed(1) ?? 'N/A'}%, Black Avg ${avgBlackAccuracy?.toFixed(1) ?? 'N/A'}%`);
 }
+
 
 function initAccuracyChart() {
     if (!accuracyChartCanvas) {
@@ -1025,40 +1227,39 @@ function initAccuracyChart() {
     }
     const ctx = accuracyChartCanvas.getContext('2d');
 
-    // Check if the chart already exists and destroy it before reinitializing
     if (accuracyChart) {
-        accuracyChart.destroy();
+        accuracyChart.destroy(); // Ensure clean slate
         accuracyChart = null;
     }
 
-    // Initialize the chart with a default data point so that it always renders,
-    // even if le nombre de coups total (moves) is 0.
     accuracyChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: ['0'], // default label for the initial position
+            labels: [], // Populated by updateAccuracyChartAndStats
             datasets: [
                 {
-                    label: 'Précision Blanc',
-                    data: [50], // starting at a neutral 50% pourcentage
-                    borderColor: 'rgba(230, 230, 230, 0.8)',
+                    label: 'Précision Blanc (%)',
+                    data: [], // Populated by updateAccuracyChartAndStats
+                    borderColor: 'rgba(230, 230, 230, 0.8)', // Lighter color for White
                     backgroundColor: 'rgba(230, 230, 230, 0.1)',
                     borderWidth: 2,
                     tension: 0.1,
-                    spanGaps: true,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    spanGaps: false, // Don't connect gaps for accuracy
+                    pointBackgroundColor: 'rgba(230, 230, 230, 0.8)',
                 },
                 {
-                    label: 'Précision Noir',
-                    data: [50],
-                    borderColor: 'rgba(60, 60, 60, 0.8)',
+                    label: 'Précision Noir (%)',
+                    data: [], // Populated by updateAccuracyChartAndStats
+                    borderColor: 'rgba(60, 60, 60, 0.8)', // Darker color for Black
                     backgroundColor: 'rgba(60, 60, 60, 0.1)',
                     borderWidth: 2,
                     tension: 0.1,
-                    spanGaps: true,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    spanGaps: false, // Don't connect gaps for accuracy
+                    pointBackgroundColor: 'rgba(60, 60, 60, 0.8)',
                 }
             ]
         },
@@ -1067,50 +1268,78 @@ function initAccuracyChart() {
             maintainAspectRatio: false,
             scales: {
                 y: {
-                    beginAtZero: true,
+                    min: 0,
                     max: 100,
-                    title: { display: true, text: 'Précision (%)' },
-                    ticks: { color: '#aaa' },
-                    grid: { color: 'rgba(170, 170, 170, 0.2)' }
+                    title: { display: true, text: 'Précision (%)', color: '#ccc' },
+                    ticks: {
+                        color: '#aaa',
+                        stepSize: 10,
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(170, 170, 170, 0.2)',
+                        drawBorder: false,
+                    },
                 },
                 x: {
-                    title: { display: true, text: 'Coup' },
+                    title: { display: true, text: 'Coup', color: '#ccc' },
                     ticks: {
                         color: '#aaa',
                         maxRotation: 0,
-                        // Afficher TOUS les coups, quel que soit leur nombre
-                        autoSkip: false
+                        autoSkip: false, // Changed from true to false
+                        maxTicksLimit: 20 // Limit number of labels shown
                     },
                     grid: { display: false }
                 }
             },
             plugins: {
                 legend: {
+                    display: true,
                     position: 'top',
-                    labels: { color: '#ccc' }
+                    labels: {
+                        color: '#ccc',
+                        usePointStyle: true,
+                    }
                 },
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    backgroundColor: 'rgba(30, 30, 30, 0.9)',
+                    titleColor: '#eee',
+                    bodyColor: '#ddd',
                     callbacks: {
-                        label: function (context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
+                        title: function(tooltipItems) {
+                            // Show move number and SAN from the label
+                            return tooltipItems[0]?.label || '';
+                        },
+                        label: function(context) {
+                            const datasetLabel = context.dataset.label || '';
+                            const value = context.parsed.y;
+                            if (value === null || isNaN(value)) {
+                                return null; // Don't show tooltip for NaN values
                             }
-                            if (context.parsed.y !== null && !isNaN(context.parsed.y)) {
-                                label += context.parsed.y.toFixed(1) + '%';
-                            } else {
-                                label = '';
+                            let label = `${datasetLabel}: ${value.toFixed(1)}%`;
+
+                            // Add Classification if available
+                            const index = context.dataIndex;
+                            const analysis = moveAnalysisData[index + 1]; // Analysis after the move
+                            if (analysis?.classification) {
+                                label += ` (${analysis.classification})`;
                             }
                             return label;
                         }
                     }
                 }
-            }
+            },
+            interaction: { // Ensure tooltips appear even over NaN points
+                mode: 'index',
+                intersect: false,
+            },
         }
     });
-    console.log("Accuracy chart initialized.");
+    console.log("Accuracy chart initialized (autoSkip disabled).");
 }
 
 // --- Move Classification ---
@@ -1202,7 +1431,7 @@ function processStockfishQueue() {
         if (allPass1Done && !analysisComplete) {
             console.log("Analysis Pass 1 complete. Calculating accuracy...");
             analysisComplete = true;
-            calculateAndDrawAccuracy();
+            updateAccuracyChartAndStats();
             analysisProgressText.textContent = "Analyse Terminée.";
         }
         return;
@@ -1489,7 +1718,7 @@ function resetAnalysisState() {
     clearAnalysisUI();
     clearOverlays();
     if (accuracyChart) {
-        calculateAndDrawAccuracy();
+        updateAccuracyChartAndStats();
     }
     if (accuracyWhiteEl) accuracyWhiteEl.textContent = "Blanc: N/A%";
     if (accuracyBlackEl) accuracyBlackEl.textContent = "Noir: N/A%";
@@ -1509,7 +1738,7 @@ function setupUI() {
 
     buildMoveListUI();
 
-    [filterPlayedEl, filterBestEl, filterPvEl, filterThreatsEl].forEach(el => {
+    [filterPlayedEl, filterBestEl, filterPvEl, filterThreatsEl, filterMatEl].forEach(el => { // Added filterMatEl
         if (el) el.addEventListener('change', updateBoardOverlays);
         else console.warn("A filter element is missing");
     });
@@ -1533,7 +1762,7 @@ function setupUI() {
             if (loadedOK && fullGameHistory.length > 0) {
                 statusEl.textContent = "PGN chargé. Préparation de l'analyse...";
                 buildMoveListUI();
-                calculateAndDrawAccuracy();
+                updateAccuracyChartAndStats();
                 goToMove(-1);
                 startFullGameAnalysis();
             } else if (!loadedOK) {
@@ -1568,6 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loadedFromStorage && fullGameHistory.length > 0) {
         console.log("Game loaded from localStorage for review.");
         statusEl.textContent = "Partie chargée depuis la session précédente.";
+        updateAccuracyChartAndStats();
         goToMove(fullGameHistory.length - 1);
         startFullGameAnalysis();
     } else if (!loadedFromStorage && !pgnInputArea.value.trim()) {
@@ -1583,11 +1813,15 @@ document.addEventListener('DOMContentLoaded', () => {
         statusEl.textContent = "Prêt. Collez un PGN pour commencer l'analyse.";
         updateNavButtons();
         clearAnalysisUI();
-        calculateAndDrawAccuracy();
+        updateAccuracyChartAndStats();
     }
     setTimeout(setupBoardOverlay, 150);
-    window.addEventListener('resize', setupBoardOverlay);
-    initAccuracyChart();
+    window.addEventListener('resize', () => {
+        // Use a debounce mechanism if resize events fire too rapidly
+        clearTimeout(window.resizeTimer);
+        window.resizeTimer = setTimeout(setupBoardOverlay, 200); // Recalculate on resize end
+    });
+    initAccuracyChart(); // Ensure chart is initialized
 });
 
 console.log("Review page script (Interactive Play Enabled) loaded.");
